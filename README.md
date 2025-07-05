@@ -30,3 +30,17 @@ With Flutter available run the following commands from the repository root:
 flutter pub get
 flutter run -d chrome  # or select another connected device
 ```
+
+## Running with Docker
+
+You can build and run the app in a container using the provided `Dockerfile`.
+
+```bash
+# Build the Docker image
+docker build -t hanziapp .
+
+# Run the app exposing port 8080
+docker run -p 8080:8080 hanziapp
+```
+
+The app will be available on [http://localhost:8080](http://localhost:8080).

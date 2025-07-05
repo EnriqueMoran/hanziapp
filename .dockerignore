@@ -1,0 +1,10 @@
+# Exclude files and directories not needed in the container
+.git
+.idea
+build
+.dart_tool
+.pub
+.pub-cache
+packages
+flutter_export_environment.sh
+pubspec.lock
