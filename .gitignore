@@ -11,3 +11,4 @@ packages/
 .pub-cache/
 .pub/
 flutter_export_environment.sh
+.metadata
