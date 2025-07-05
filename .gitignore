@@ -1,0 +1,13 @@
+# Flutter dependencies
+build/
+.dart_tool/
+.idea/
+.packages
+pubspec.lock
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-plugins
+packages/
+.pub-cache/
+.pub/
+flutter_export_environment.sh
