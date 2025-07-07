@@ -12,3 +12,4 @@ packages/
 .pub/
 flutter_export_environment.sh
 .metadata
+backend/hanzi.db

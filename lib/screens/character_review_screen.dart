@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../api/character_api.dart';
 
 class CharacterReviewScreen extends StatefulWidget {
   const CharacterReviewScreen({Key? key}) : super(key: key);
@@ -14,10 +15,26 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool showTranslation = true;
   bool random = true;
 
-  List<String> characters = ['冻', '想象', '灰尘', '亮', '微笑', '希望', '和平'];
-  int currentIndex = 2;
+  List<Character> characters = [];
+  int currentIndex = 0;
+
+  Character? get current =>
+      characters.isEmpty ? null : characters[currentIndex];
 
   List<Offset?> _points = [];
+
+  @override
+  void initState() {
+    super.initState();
+    CharacterApi.fetchAll().then((list) {
+      if (mounted) {
+        setState(() {
+          characters = list;
+          currentIndex = 0;
+        });
+      }
+    });
+  }
 
   void _clearDrawing() {
     print("Canvas cleared.");
@@ -42,11 +59,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     }
   }
 
-  String get currentCharacter => characters[currentIndex];
+  String get currentCharacter => current?.character ?? '';
   String getCharacterAt(int offset) {
     int index = currentIndex + offset;
     if (index < 0 || index >= characters.length) return '';
-    return characters[index];
+    return characters[index].character;
   }
 
   @override
@@ -78,14 +95,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               maintainSize: true,
               maintainAnimation: true,
               maintainState: true,
-              child: const Text("huīchén", style: TextStyle(fontSize: 24)),
+              child: Text(current?.pinyin ?? '', style: const TextStyle(fontSize: 24)),
             ),
             Visibility(
               visible: showTranslation,
               maintainSize: true,
               maintainAnimation: true,
               maintainState: true,
-              child: const Text("dust, dirt", style: TextStyle(fontSize: 20)),
+              child: Text(current?.meaning ?? '', style: const TextStyle(fontSize: 20)),
             ),
 
             const SizedBox(height: 8),
@@ -107,9 +124,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 // Level and tags
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: const [
-                    Text("Level: HSK 5"),
-                    Text("Tags: class, noun, exam"),
+                  children: [
+                    Text('Level: ${current?.level ?? ''}'),
+                    Text('Tags: ${current?.tags.join(', ') ?? ''}'),
                   ],
                 ),
               ],
@@ -141,29 +158,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
             // Examples and usage notes
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Examples", style: TextStyle(fontWeight: FontWeight.bold)),
-                      SizedBox(height: 4),
-                      Text("· 这些书架上积满了灰尘。\n(These shelves are covered with dust)"),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Usage notes", style: TextStyle(fontWeight: FontWeight.bold)),
-                      SizedBox(height: 4),
-                      Text("· Used to describe accumulated dust."),
-                    ],
-                  ),
-                ),
+              children: [
+                Expanded(child: Text(current?.other ?? '')),
               ],
             ),
 
@@ -234,7 +230,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   }
 
   Widget _buildPreviewCharacter(String char, double size) {
-    return Text(char, style: TextStyle(fontSize: size));
+    final display = showHanzi ? char : '';
+    return Text(display, style: TextStyle(fontSize: size));
   }
 
   Widget _buildToggle(String label, bool value, ValueChanged<bool> onChanged) {

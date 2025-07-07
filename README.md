@@ -31,3 +31,19 @@ flutter pub get
 flutter run -d chrome  # or select another connected device
 ```
 
+
+## Backend API
+
+A simple Flask service under `backend/` exposes the characters stored in a SQLite database. Build and run it with Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+The database file is not kept in version control. To create it from `data.json`, run:
+
+```bash
+./backend/create_db.sh
+```
+
+The service will be available at `http://localhost:5000`.
