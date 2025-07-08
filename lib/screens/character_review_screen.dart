@@ -171,8 +171,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               width: constraints.maxWidth,
               height: constraints.maxHeight,
               decoration: BoxDecoration(
-                color: Colors.grey[100],
-                border: Border.all(color: Colors.black26),
+                color: Colors.grey[800],
+                border: Border.all(color: Colors.white24),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: CustomPaint(
@@ -314,7 +314,7 @@ class _DrawingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black87
+      ..color = Colors.white
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
 

@@ -8,7 +8,8 @@ class HanziApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Hanzi App',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       home: const HomeScreen(),
     );
   }
