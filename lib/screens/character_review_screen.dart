@@ -185,32 +185,40 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       ),
     );
 
+    final prevButton = ElevatedButton(
+      onPressed: _goToPreviousCharacter,
+      child: const Text('PREVIOUS'),
+    );
+    final nextButton = ElevatedButton(
+      onPressed: _goToNextCharacter,
+      child: const Text('NEXT'),
+    );
+    final deleteButton = ElevatedButton(
+      onPressed: _clearDrawing,
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+      child: const Text('DELETE'),
+    );
+
     final navigationButtons = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ElevatedButton(
-          onPressed: _goToPreviousCharacter,
-          child: const Text('PREVIOUS'),
+        Row(
+          children: [
+            prevButton,
+            const SizedBox(width: 8),
+            nextButton,
+          ],
         ),
         const SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: _clearDrawing,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          child: const Text('DELETE'),
-        ),
-        const SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: _goToNextCharacter,
-          child: const Text('NEXT'),
-        ),
+        deleteButton,
       ],
     );
 
     Widget content;
     if (kIsWeb) {
-      const double panelWidth = 220;
-      final rightPanel = SizedBox(
-        width: panelWidth,
+      const double sideWidth = 220;
+      final rightSide = SizedBox(
+        width: sideWidth,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -219,6 +227,23 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
             levelTags,
           ],
         ),
+      );
+
+      final topRow = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          toggleColumn,
+          Expanded(
+            child: Column(
+              children: [
+                characterRow,
+                pinyinWidget,
+                meaningWidget,
+              ],
+            ),
+          ),
+          rightSide,
+        ],
       );
 
       final bottomRow = Row(
@@ -230,32 +255,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         ],
       );
 
-      final leftColumn = Padding(
-        padding: const EdgeInsets.only(right: panelWidth + 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            toggleColumn,
-            const SizedBox(height: 16),
-            characterRow,
-            Center(child: pinyinWidget),
-            Center(child: meaningWidget),
-            const SizedBox(height: 8),
-            exampleArea,
-            const Spacer(),
-            bottomRow,
-          ],
-        ),
-      );
-
-      content = Stack(
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          leftColumn,
-          Positioned(
-            top: 0,
-            right: 0,
-            child: rightPanel,
-          ),
+          topRow,
+          const SizedBox(height: 8),
+          exampleArea,
+          const Spacer(),
+          bottomRow,
         ],
       );
     } else {
