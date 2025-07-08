@@ -16,7 +16,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool showTranslation = true;
   bool random = true;
 
-  static const double _drawingHeight = 300;
   static const double _otherHeight = 150;
 
   List<Character> characters = [];
@@ -92,14 +91,22 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       maintainSize: true,
       maintainAnimation: true,
       maintainState: true,
-      child: Text(current?.pinyin ?? '', style: const TextStyle(fontSize: 24)),
+      child: Text(
+        current?.pinyin ?? '',
+        style: const TextStyle(fontSize: 24),
+        textAlign: TextAlign.left,
+      ),
     );
     final meaningWidget = Visibility(
       visible: showTranslation,
       maintainSize: true,
       maintainAnimation: true,
       maintainState: true,
-      child: Text(current?.meaning ?? '', style: const TextStyle(fontSize: 20)),
+      child: Text(
+        current?.meaning ?? '',
+        style: const TextStyle(fontSize: 20),
+        textAlign: TextAlign.left,
+      ),
     );
 
     final toggleColumn = Column(
@@ -139,11 +146,17 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
     final exampleArea = SizedBox(
       height: _otherHeight,
-      child: SingleChildScrollView(child: Text(current?.other ?? '')),
+      child: SingleChildScrollView(
+        child: Text(
+          current?.other ?? '',
+          textAlign: TextAlign.left,
+        ),
+      ),
     );
 
+    final drawingHeight = MediaQuery.of(context).size.height / 4;
     final drawingArea = SizedBox(
-      height: _drawingHeight,
+      height: drawingHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
           return GestureDetector(
@@ -198,37 +211,47 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
     Widget content;
     if (kIsWeb) {
+      const double panelWidth = 220;
+      final rightPanel = SizedBox(
+        width: panelWidth,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            toggleColumn,
+            const SizedBox(height: 16),
+            randomRestart,
+            const SizedBox(height: 16),
+            levelTags,
+          ],
+        ),
+      );
+
+      final leftColumn = Padding(
+        padding: const EdgeInsets.only(right: panelWidth + 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            characterRow,
+            pinyinWidget,
+            meaningWidget,
+            const SizedBox(height: 8),
+            exampleArea,
+            const SizedBox(height: 8),
+            drawingArea,
+          ],
+        ),
+      );
+
       content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Stack(
             children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    characterRow,
-                    pinyinWidget,
-                    meaningWidget,
-                    const SizedBox(height: 8),
-                    exampleArea,
-                    const SizedBox(height: 8),
-                    drawingArea,
-                  ],
-                ),
-              ),
-              const SizedBox(width: 24),
-              SizedBox(
-                width: 220,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    toggleColumn,
-                    const SizedBox(height: 16),
-                    randomRestart,
-                    const SizedBox(height: 16),
-                    levelTags,
-                  ],
-                ),
+              leftColumn,
+              Positioned(
+                top: 0,
+                right: 0,
+                child: rightPanel,
               ),
             ],
           ),
@@ -238,6 +261,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       );
     } else {
       content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           characterRow,
           pinyinWidget,
