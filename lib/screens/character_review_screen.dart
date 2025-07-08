@@ -94,7 +94,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       child: Text(
         current?.pinyin ?? '',
         style: const TextStyle(fontSize: 24),
-        textAlign: TextAlign.left,
+        textAlign: TextAlign.center,
       ),
     );
     final meaningWidget = Visibility(
@@ -105,7 +105,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       child: Text(
         current?.meaning ?? '',
         style: const TextStyle(fontSize: 20),
-        textAlign: TextAlign.left,
+        textAlign: TextAlign.center,
       ),
     );
 
@@ -185,26 +185,23 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       ),
     );
 
-    final navigationRow = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final navigationButtons = Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         ElevatedButton(
           onPressed: _goToPreviousCharacter,
           child: const Text('PREVIOUS'),
         ),
-        Row(
-          children: [
-            ElevatedButton(
-              onPressed: _clearDrawing,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('DELETE'),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _goToNextCharacter,
-              child: const Text('NEXT'),
-            ),
-          ],
+        const SizedBox(height: 8),
+        ElevatedButton(
+          onPressed: _clearDrawing,
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: const Text('DELETE'),
+        ),
+        const SizedBox(height: 8),
+        ElevatedButton(
+          onPressed: _goToNextCharacter,
+          child: const Text('NEXT'),
         ),
       ],
     );
@@ -217,8 +214,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            toggleColumn,
-            const SizedBox(height: 16),
             randomRestart,
             const SizedBox(height: 16),
             levelTags,
@@ -226,46 +221,59 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         ),
       );
 
+      final bottomRow = Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(child: drawingArea),
+          const SizedBox(width: 12),
+          navigationButtons,
+        ],
+      );
+
       final leftColumn = Padding(
         padding: const EdgeInsets.only(right: panelWidth + 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            toggleColumn,
+            const SizedBox(height: 16),
             characterRow,
-            pinyinWidget,
-            meaningWidget,
+            Center(child: pinyinWidget),
+            Center(child: meaningWidget),
             const SizedBox(height: 8),
             exampleArea,
-            const SizedBox(height: 8),
-            drawingArea,
+            const Spacer(),
+            bottomRow,
           ],
         ),
+      );
+
+      content = Stack(
+        children: [
+          leftColumn,
+          Positioned(
+            top: 0,
+            right: 0,
+            child: rightPanel,
+          ),
+        ],
+      );
+    } else {
+      final bottomRow = Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(child: drawingArea),
+          const SizedBox(width: 12),
+          navigationButtons,
+        ],
       );
 
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              leftColumn,
-              Positioned(
-                top: 0,
-                right: 0,
-                child: rightPanel,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          navigationRow,
-        ],
-      );
-    } else {
-      content = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
           characterRow,
-          pinyinWidget,
-          meaningWidget,
+          Center(child: pinyinWidget),
+          Center(child: meaningWidget),
           const SizedBox(height: 8),
           toggleColumn,
           const SizedBox(height: 8),
@@ -274,10 +282,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           levelTags,
           const SizedBox(height: 8),
           exampleArea,
-          const SizedBox(height: 8),
-          drawingArea,
-          const SizedBox(height: 16),
-          navigationRow,
+          const Spacer(),
+          bottomRow,
         ],
       );
     }
