@@ -172,11 +172,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                   return GestureDetector(
                     onPanUpdate: (details) {
                       final localPosition = details.localPosition;
-                      print("Drawing at: $localPosition");
                       setState(() => _points.add(localPosition));
                     },
                     onPanEnd: (_) {
-                      print("Stroke ended.");
                       _points.add(null);
                     },
                     child: Container(
