@@ -15,6 +15,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool showTranslation = true;
   bool random = false; // Random disabled by default
 
+  bool _editing = false;
+  late final TextEditingController _hanziController;
+  late final TextEditingController _pinyinController;
+  late final TextEditingController _meaningController;
+
   // Placeholder for batch value; will be fetched from the database in future
   String batchValue = 'None';
 
@@ -22,7 +27,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   int currentIndex = 0;
   List<Offset?> _points = [];
 
-  Character? get current => characters.isEmpty ? null : characters[currentIndex];
+  Character? get current =>
+      characters.isEmpty ? null : characters[currentIndex];
 
   static const double _toggleWidth = 200;
   static const double _controlsWidth = 180;
@@ -37,6 +43,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   @override
   void initState() {
     super.initState();
+    _hanziController = TextEditingController();
+    _pinyinController = TextEditingController();
+    _meaningController = TextEditingController();
     // Fetch all characters on init
     CharacterApi.fetchAll().then((list) {
       if (mounted) {
@@ -47,6 +56,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       }
     });
     // TODO: in the future, load batchValue from API/database here
+  }
+
+  @override
+  void dispose() {
+    _hanziController.dispose();
+    _pinyinController.dispose();
+    _meaningController.dispose();
+    super.dispose();
   }
 
   // Clear the drawing strokes
@@ -79,7 +96,35 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   // Edit the current character (to be implemented)
   void _editCharacter() {
-    // TODO: navigate to character edit screen
+    if (!_editing) {
+      setState(() {
+        _editing = true;
+        _hanziController.text = current?.character ?? '';
+        _pinyinController.text = current?.pinyin ?? '';
+        _meaningController.text = current?.meaning ?? '';
+      });
+      return;
+    }
+    // save changes
+    if (current != null) {
+      setState(() {
+        characters[currentIndex] = Character(
+          character: _hanziController.text,
+          pinyin: _pinyinController.text,
+          meaning: _meaningController.text,
+          level: current!.level,
+          tags: current!.tags,
+          other: current!.other,
+        );
+        _editing = false;
+      });
+    }
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editing = false;
+    });
   }
 
   // Get neighbour character at a given offset
@@ -98,10 +143,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final toggles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildToggle('Auto Sound', autoSound, (v) => setState(() => autoSound = v)),
-        _buildToggle('Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
-        _buildToggle('Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
-        _buildToggle('Show Translation', showTranslation, (v) => setState(() => showTranslation = v)),
+        _buildToggle(
+            'Auto Sound', autoSound, (v) => setState(() => autoSound = v)),
+        _buildToggle(
+            'Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
+        _buildToggle(
+            'Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
+        _buildToggle('Show Translation', showTranslation,
+            (v) => setState(() => showTranslation = v)),
       ],
     );
 
@@ -122,30 +171,49 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: SelectableText(
-            showHanzi ? (current?.character ?? '') : '',
+        if (_editing)
+          TextField(
+            controller: _hanziController,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 48),
+          )
+        else
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SelectableText(
+              showHanzi ? (current?.character ?? '') : '',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 48),
+            ),
           ),
-        ),
         const SizedBox(height: 8),
-        if (showPinyin)
-          SelectableText(
-            current?.pinyin ?? '',
-            strutStyle: _fixedStrut,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
-          ),
+        if (_editing || showPinyin)
+          (_editing
+              ? TextField(
+                  controller: _pinyinController,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
+                )
+              : SelectableText(
+                  current?.pinyin ?? '',
+                  strutStyle: _fixedStrut,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
+                )),
         const SizedBox(height: 6),
-        if (showTranslation)
-          SelectableText(
-            current?.meaning ?? '',
-            strutStyle: _fixedStrut,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
-          ),
+        if (_editing || showTranslation)
+          (_editing
+              ? TextField(
+                  controller: _meaningController,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                )
+              : SelectableText(
+                  current?.meaning ?? '',
+                  strutStyle: _fixedStrut,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                )),
       ],
     );
 
@@ -180,7 +248,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     // 4) Example data area with two equal-sized boxes
     final exampleArea = Expanded(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch, // make both fill the height
+        crossAxisAlignment:
+            CrossAxisAlignment.stretch, // make both fill the height
         children: [
           Expanded(
             child: Container(
@@ -244,8 +313,19 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _editCharacter,
-                  child: const Text('EDIT CHARACTER'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: _editing ? Colors.green : null),
+                  child: Text(_editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
                 ),
+                if (_editing) ...[
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _cancelEdit,
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    child: const Text('CANCEL CHANGES'),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 16),
@@ -258,7 +338,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           height: screenHeight * _drawingHeightRatio,
           child: LayoutBuilder(builder: (ctx, cons) {
             return GestureDetector(
-              onPanUpdate: (details) => setState(() => _points.add(details.localPosition)),
+              onPanUpdate: (details) =>
+                  setState(() => _points.add(details.localPosition)),
               onPanEnd: (_) => _points.add(null),
               child: Container(
                 width: cons.maxWidth,
@@ -291,9 +372,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
             child: const Text('DELETE'),
           ),
           const SizedBox(width: 8),
-          ElevatedButton(onPressed: _goToPreviousCharacter, child: const Text('PREVIOUS')),
+          ElevatedButton(
+              onPressed: _goToPreviousCharacter, child: const Text('PREVIOUS')),
           const SizedBox(width: 8),
-          ElevatedButton(onPressed: _goToNextCharacter, child: const Text('NEXT')),
+          ElevatedButton(
+              onPressed: _goToNextCharacter, child: const Text('NEXT')),
         ],
       ),
     );
