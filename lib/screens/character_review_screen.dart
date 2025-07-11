@@ -44,6 +44,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           characters = list;
           currentIndex = 0;
         });
+        if (list.isNotEmpty) {
+          CharacterApi.setLastReviewed(list[0].id);
+        }
       }
     });
     // TODO: in the future, load batchValue from API/database here
@@ -59,6 +62,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         currentIndex--;
         _clearDrawing();
       });
+      CharacterApi.setLastReviewed(current!.id);
     }
   }
 
@@ -69,17 +73,81 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         currentIndex++;
         _clearDrawing();
       });
+      CharacterApi.setLastReviewed(current!.id);
     }
   }
 
-  // Delete the current character (to be implemented)
-  void _deleteCharacter() {
-    // TODO: call API to delete character and refresh list
+  // Delete the current character
+  void _deleteCharacter() async {
+    final c = current;
+    if (c == null) return;
+    final success = await CharacterApi.deleteCharacter(c.id);
+    if (success) {
+      setState(() {
+        characters.removeAt(currentIndex);
+        if (currentIndex >= characters.length) {
+          currentIndex = characters.isEmpty ? 0 : characters.length - 1;
+        }
+      });
+      if (characters.isNotEmpty) {
+        CharacterApi.setLastReviewed(current!.id);
+      }
+    }
   }
 
-  // Edit the current character (to be implemented)
-  void _editCharacter() {
-    // TODO: navigate to character edit screen
+  // Edit the current character via a simple dialog
+  void _editCharacter() async {
+    final c = current;
+    if (c == null) return;
+    final pinyinCtrl = TextEditingController(text: c.pinyin);
+    final meaningCtrl = TextEditingController(text: c.meaning);
+    final levelCtrl = TextEditingController(text: c.level);
+    final tagsCtrl = TextEditingController(text: c.tags.join(','));
+    final otherCtrl = TextEditingController(text: c.other);
+    final examplesCtrl = TextEditingController(text: c.examples);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Character'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: pinyinCtrl, decoration: const InputDecoration(labelText: 'Pinyin')),
+                TextField(controller: meaningCtrl, decoration: const InputDecoration(labelText: 'Meaning')),
+                TextField(controller: levelCtrl, decoration: const InputDecoration(labelText: 'Level')),
+                TextField(controller: tagsCtrl, decoration: const InputDecoration(labelText: 'Tags (comma separated)')),
+                TextField(controller: otherCtrl, decoration: const InputDecoration(labelText: 'Other')),
+                TextField(controller: examplesCtrl, decoration: const InputDecoration(labelText: 'Examples')),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Save')),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      final updated = Character(
+        id: c.id,
+        character: c.character,
+        pinyin: pinyinCtrl.text,
+        meaning: meaningCtrl.text,
+        level: levelCtrl.text,
+        tags: tagsCtrl.text.split(',').where((e) => e.trim().isNotEmpty).toList(),
+        other: otherCtrl.text,
+        examples: examplesCtrl.text,
+      );
+      final success = await CharacterApi.updateCharacter(updated);
+      if (success) {
+        setState(() => characters[currentIndex] = updated);
+      }
+    }
   }
 
   // Get neighbour character at a given offset
@@ -202,14 +270,18 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           Expanded(
             child: Container(
               margin: const EdgeInsets.only(left: 4),
-              padding: const EdgeInsets.all(8), // match padding of the left box
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.teal.withOpacity(0.1),
                 border: Border.all(color: Colors.teal),
                 borderRadius: BorderRadius.circular(8),
               ),
-              // Placeholder content or future widget goes here
-              child: const SizedBox.expand(),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  current?.examples ?? '',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
             ),
           ),
         ],
