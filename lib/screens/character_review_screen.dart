@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../api/character_api.dart';
 
 class CharacterReviewScreen extends StatefulWidget {
@@ -14,21 +13,31 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool showHanzi = true;
   bool showPinyin = true;
   bool showTranslation = true;
-  bool random = true;
+  bool random = false; // Random disabled by default
 
-  static const double _otherHeight = 150;
+  // Placeholder for batch value; will be fetched from the database in future
+  String batchValue = 'None';
 
   List<Character> characters = [];
   int currentIndex = 0;
-
-  Character? get current =>
-      characters.isEmpty ? null : characters[currentIndex];
-
   List<Offset?> _points = [];
+
+  Character? get current => characters.isEmpty ? null : characters[currentIndex];
+
+  static const double _toggleWidth = 200;
+  static const double _controlsWidth = 180;
+  static const double _drawingHeightRatio = 0.25;
+
+  // Fixed strut to prevent accents from changing line height
+  static const StrutStyle _fixedStrut = StrutStyle(
+    forceStrutHeight: true,
+    height: 1.0,
+  );
 
   @override
   void initState() {
     super.initState();
+    // Fetch all characters on init
     CharacterApi.fetchAll().then((list) {
       if (mounted) {
         setState(() {
@@ -37,13 +46,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         });
       }
     });
+    // TODO: in the future, load batchValue from API/database here
   }
 
-  void _clearDrawing() {
-    print("Canvas cleared.");
-    setState(() => _points = []);
-  }
+  // Clear the drawing strokes
+  void _clearDrawing() => setState(() => _points = []);
 
+  // Navigate to the previous character
   void _goToPreviousCharacter() {
     if (currentIndex > 0) {
       setState(() {
@@ -53,6 +62,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     }
   }
 
+  // Navigate to the next character
   void _goToNextCharacter() {
     if (currentIndex < characters.length - 1) {
       setState(() {
@@ -62,253 +72,268 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     }
   }
 
-  String get currentCharacter => current?.character ?? '';
+  // Delete the current character (to be implemented)
+  void _deleteCharacter() {
+    // TODO: call API to delete character and refresh list
+  }
+
+  // Edit the current character (to be implemented)
+  void _editCharacter() {
+    // TODO: navigate to character edit screen
+  }
+
+  // Get neighbour character at a given offset
   String getCharacterAt(int offset) {
-    int index = currentIndex + offset;
-    if (index < 0 || index >= characters.length) return '';
-    return characters[index].character;
+    final i = currentIndex + offset;
+    if (i < 0 || i >= characters.length) return '';
+    return characters[i].character;
   }
 
   @override
   Widget build(BuildContext context) {
-    final characterRow = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildPreviewCharacter(getCharacterAt(-2), 16),
-        const SizedBox(width: 8),
-        _buildPreviewCharacter(getCharacterAt(-1), 24),
-        const SizedBox(width: 12),
-        _buildPreviewCharacter(getCharacterAt(0), 48),
-        const SizedBox(width: 12),
-        _buildPreviewCharacter(getCharacterAt(1), 24),
-        const SizedBox(width: 8),
-        _buildPreviewCharacter(getCharacterAt(2), 16),
-      ],
-    );
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-    final pinyinWidget = Visibility(
-      visible: showPinyin,
-      maintainSize: true,
-      maintainAnimation: true,
-      maintainState: true,
-      child: Text(
-        current?.pinyin ?? '',
-        style: const TextStyle(fontSize: 24),
-        textAlign: TextAlign.center,
-      ),
-    );
-    final meaningWidget = Visibility(
-      visible: showTranslation,
-      maintainSize: true,
-      maintainAnimation: true,
-      maintainState: true,
-      child: Text(
-        current?.meaning ?? '',
-        style: const TextStyle(fontSize: 20),
-        textAlign: TextAlign.center,
-      ),
-    );
-
-    final toggleColumn = Column(
+    // 1) Toggle switches for options
+    final toggles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildToggle('Auto sound', autoSound, (v) => setState(() => autoSound = v)),
-        _buildToggle('Show hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
-        _buildToggle('Show pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
-        _buildToggle('Show translation', showTranslation, (v) => setState(() => showTranslation = v)),
+        _buildToggle('Auto Sound', autoSound, (v) => setState(() => autoSound = v)),
+        _buildToggle('Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
+        _buildToggle('Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
+        _buildToggle('Show Translation', showTranslation, (v) => setState(() => showTranslation = v)),
       ],
     );
 
-    final randomRestart = Column(
+    // 2) Preview box with neighbours, character, pinyin, and translation
+    final previewBox = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildNeighbor(getCharacterAt(-2), 16),
+            const SizedBox(width: 12),
+            _buildNeighbor(getCharacterAt(-1), 24),
+            const SizedBox(width: 24),
+            _buildNeighbor(getCharacterAt(1), 24),
+            const SizedBox(width: 12),
+            _buildNeighbor(getCharacterAt(2), 16),
+          ],
+        ),
+        const SizedBox(height: 12),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SelectableText(
+            showHanzi ? (current?.character ?? '') : '',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 48),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (showPinyin)
+          SelectableText(
+            current?.pinyin ?? '',
+            strutStyle: _fixedStrut,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
+          ),
+        const SizedBox(height: 6),
+        if (showTranslation)
+          SelectableText(
+            current?.meaning ?? '',
+            strutStyle: _fixedStrut,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16),
+          ),
+      ],
+    );
+
+    // 3) Controls: restart, random toggle, and batch info
+    final controls = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ElevatedButton(
           onPressed: _clearDrawing,
           child: const Text('RESTART'),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Row(
           children: [
             const Text('RANDOM'),
-            Switch(value: random, onChanged: (v) => setState(() => random = v)),
-          ],
-        ),
-      ],
-    );
-
-    final levelTags = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Level: ${current?.level ?? ''}'),
-        Text('Tags: ${current?.tags.join(', ') ?? ''}'),
-      ],
-    );
-
-    final exampleArea = SizedBox(
-      height: _otherHeight,
-      child: SingleChildScrollView(
-        child: Text(
-          current?.other ?? '',
-          textAlign: TextAlign.left,
-        ),
-      ),
-    );
-
-    final drawingHeight = MediaQuery.of(context).size.height / 4;
-    final drawingArea = SizedBox(
-      height: drawingHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return GestureDetector(
-            onPanUpdate: (details) {
-              final localPosition = details.localPosition;
-              setState(() => _points.add(localPosition));
-            },
-            onPanEnd: (_) {
-              _points.add(null);
-            },
-            child: Container(
-              width: constraints.maxWidth,
-              height: constraints.maxHeight,
-              decoration: BoxDecoration(
-                color: Colors.grey[800],
-                border: Border.all(color: Colors.white24),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: CustomPaint(
-                painter: _DrawingPainter(points: _points),
-                child: const SizedBox.expand(),
-              ),
+            Switch(
+              value: random,
+              onChanged: (v) => setState(() => random = v),
             ),
-          );
-        },
-      ),
-    );
-
-    final prevButton = ElevatedButton(
-      onPressed: _goToPreviousCharacter,
-      child: const Text('PREVIOUS'),
-    );
-    final nextButton = ElevatedButton(
-      onPressed: _goToNextCharacter,
-      child: const Text('NEXT'),
-    );
-    final deleteButton = ElevatedButton(
-      onPressed: _clearDrawing,
-      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-      child: const Text('DELETE'),
-    );
-
-    final navigationButtons = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          children: [
-            prevButton,
-            const SizedBox(width: 8),
-            nextButton,
           ],
         ),
         const SizedBox(height: 8),
-        deleteButton,
+        Text(
+          'Batch: $batchValue',
+          style: const TextStyle(
+            fontSize: 16,
+          ),
+        ),
       ],
     );
 
-    Widget content;
-    if (kIsWeb) {
-      const double sideWidth = 220;
-      final rightSide = SizedBox(
-        width: sideWidth,
-        child: Column(
+    // 4) Example data area with two equal-sized boxes
+    final exampleArea = Expanded(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch, // make both fill the height
+        children: [
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(right: 4),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blueGrey.withOpacity(0.2),
+                border: Border.all(color: Colors.blueGrey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  current?.other ?? '',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(left: 4),
+              padding: const EdgeInsets.all(8), // match padding of the left box
+              decoration: BoxDecoration(
+                color: Colors.teal.withOpacity(0.1),
+                border: Border.all(color: Colors.teal),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              // Placeholder content or future widget goes here
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // 5) Level & Tags display
+    final levelTags = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SelectableText('Level: ${current?.level ?? ''}'),
+        const SizedBox(height: 4),
+        SelectableText('Tags: ${current?.tags.join(', ')}'),
+      ],
+    );
+
+    // 6) Drawing area with delete/edit and level/tags
+    final drawingSection = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            randomRestart,
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _deleteCharacter,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('DELETE CHARACTER'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _editCharacter,
+                  child: const Text('EDIT CHARACTER'),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             levelTags,
           ],
         ),
-      );
+        const Spacer(),
+        SizedBox(
+          width: screenWidth / 3,
+          height: screenHeight * _drawingHeightRatio,
+          child: LayoutBuilder(builder: (ctx, cons) {
+            return GestureDetector(
+              onPanUpdate: (details) => setState(() => _points.add(details.localPosition)),
+              onPanEnd: (_) => _points.add(null),
+              child: Container(
+                width: cons.maxWidth,
+                height: cons.maxHeight,
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  border: Border.all(color: Colors.white24),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: CustomPaint(
+                  painter: _DrawingPainter(points: _points),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            );
+          }),
+        ),
+        const Spacer(flex: 2),
+      ],
+    );
 
-      final topRow = Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    // 7) Navigation buttons below drawing
+    final navigation = Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          toggleColumn,
-          Expanded(
-            child: Column(
-              children: [
-                characterRow,
-                pinyinWidget,
-                meaningWidget,
-              ],
-            ),
+          ElevatedButton(
+            onPressed: _clearDrawing,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('DELETE'),
           ),
-          rightSide,
+          const SizedBox(width: 8),
+          ElevatedButton(onPressed: _goToPreviousCharacter, child: const Text('PREVIOUS')),
+          const SizedBox(width: 8),
+          ElevatedButton(onPressed: _goToNextCharacter, child: const Text('NEXT')),
         ],
-      );
-
-      final bottomRow = Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(child: drawingArea),
-          const SizedBox(width: 12),
-          navigationButtons,
-        ],
-      );
-
-      content = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          topRow,
-          const SizedBox(height: 8),
-          exampleArea,
-          const Spacer(),
-          bottomRow,
-        ],
-      );
-    } else {
-      final bottomRow = Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(child: drawingArea),
-          const SizedBox(width: 12),
-          navigationButtons,
-        ],
-      );
-
-      content = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          characterRow,
-          Center(child: pinyinWidget),
-          Center(child: meaningWidget),
-          const SizedBox(height: 8),
-          toggleColumn,
-          const SizedBox(height: 8),
-          randomRestart,
-          const SizedBox(height: 8),
-          levelTags,
-          const SizedBox(height: 8),
-          exampleArea,
-          const Spacer(),
-          bottomRow,
-        ],
-      );
-    }
+      ),
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Character Review')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: content,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(width: _toggleWidth, child: toggles),
+                Expanded(child: Center(child: previewBox)),
+                SizedBox(width: _controlsWidth, child: controls),
+              ],
+            ),
+            const SizedBox(height: 24),
+            exampleArea,
+            const SizedBox(height: 24),
+            drawingSection,
+            const SizedBox(height: 12),
+            navigation,
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPreviewCharacter(String char, double size) {
-    final display = showHanzi ? char : '';
-    return Text(display, style: TextStyle(fontSize: size));
+  /// Builds a neighbour-character preview
+  Widget _buildNeighbor(String char, double size) {
+    return SelectableText(
+      showHanzi ? char : '',
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: size),
+    );
   }
 
+  /// Builds a toggle row with label and switch
   Widget _buildToggle(String label, bool value, ValueChanged<bool> onChanged) {
     return Row(
       children: [
@@ -321,8 +346,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
 class _DrawingPainter extends CustomPainter {
   final List<Offset?> points;
-
-  _DrawingPainter({required this.points});
+  const _DrawingPainter({required this.points});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -330,8 +354,7 @@ class _DrawingPainter extends CustomPainter {
       ..color = Colors.white
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
-
-    for (int i = 0; i < points.length - 1; i++) {
+    for (var i = 0; i < points.length - 1; i++) {
       final p1 = points[i];
       final p2 = points[i + 1];
       if (p1 != null && p2 != null) {
@@ -341,5 +364,5 @@ class _DrawingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DrawingPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
