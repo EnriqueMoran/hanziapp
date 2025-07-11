@@ -19,6 +19,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   late final TextEditingController _hanziController;
   late final TextEditingController _pinyinController;
   late final TextEditingController _meaningController;
+  late final TextEditingController _detailsController;
 
   // Placeholder for batch value; will be fetched from the database in future
   String batchValue = 'None';
@@ -46,6 +47,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     _hanziController = TextEditingController();
     _pinyinController = TextEditingController();
     _meaningController = TextEditingController();
+    _detailsController = TextEditingController();
     // Fetch all characters on init
     CharacterApi.fetchAll().then((list) {
       if (mounted) {
@@ -63,6 +65,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     _hanziController.dispose();
     _pinyinController.dispose();
     _meaningController.dispose();
+    _detailsController.dispose();
     super.dispose();
   }
 
@@ -102,6 +105,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         _hanziController.text = current?.character ?? '';
         _pinyinController.text = current?.pinyin ?? '';
         _meaningController.text = current?.meaning ?? '';
+        _detailsController.text = current?.other ?? '';
       });
       return;
     }
@@ -114,7 +118,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           meaning: _meaningController.text,
           level: current!.level,
           tags: current!.tags,
-          other: current!.other,
+          other: _detailsController.text,
         );
         _editing = false;
       });
@@ -124,6 +128,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   void _cancelEdit() {
     setState(() {
       _editing = false;
+      _hanziController.text = current?.character ?? '';
+      _pinyinController.text = current?.pinyin ?? '';
+      _meaningController.text = current?.meaning ?? '';
+      _detailsController.text = current?.other ?? '';
     });
   }
 
@@ -260,12 +268,19 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 border: Border.all(color: Colors.blueGrey),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: SingleChildScrollView(
-                child: SelectableText(
-                  current?.other ?? '',
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ),
+              child: _editing
+                  ? TextField(
+                      controller: _detailsController,
+                      maxLines: null,
+                      decoration: const InputDecoration(border: InputBorder.none),
+                      style: const TextStyle(fontSize: 14),
+                    )
+                  : SingleChildScrollView(
+                      child: SelectableText(
+                        current?.other ?? '',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
             ),
           ),
           Expanded(
@@ -317,15 +332,23 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       backgroundColor: _editing ? Colors.green : null),
                   child: Text(_editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
                 ),
-                if (_editing) ...[
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _cancelEdit,
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    child: const Text('CANCEL CHANGES'),
+                Visibility(
+                  visible: _editing,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _cancelEdit,
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red),
+                        child: const Text('CANCEL CHANGES'),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
             const SizedBox(height: 16),
