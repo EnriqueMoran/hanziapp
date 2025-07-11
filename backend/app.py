@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, g
+from flask import Flask, jsonify, g, request
 from flask_cors import CORS
 import sqlite3
 
@@ -30,6 +30,13 @@ def query_db(query, args=(), one=False):
     return (rv[0] if rv else None) if one else rv
 
 
+def execute_db(query, args=()):
+    db = get_db()
+    cur = db.execute(query, args)
+    db.commit()
+    cur.close()
+
+
 @app.route('/characters')
 def list_characters():
     rows = query_db('SELECT * FROM characters')
@@ -42,6 +49,48 @@ def get_character(char):
     if row:
         return jsonify(row)
     return jsonify({'error': 'not found'}), 404
+
+
+@app.route('/characters/<int:char_id>', methods=['PUT'])
+def update_character(char_id):
+    data = request.get_json() or {}
+    execute_db(
+        'UPDATE characters SET character=?, pinyin=?, meaning=?, level=?, tags=?, other=?, examples=? WHERE id=?',
+        [
+            data.get('character', ''),
+            data.get('pinyin', ''),
+            data.get('meaning', ''),
+            data.get('level', ''),
+            data.get('tags', ''),
+            data.get('other', ''),
+            data.get('examples', ''),
+            char_id,
+        ],
+    )
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/characters/<int:char_id>', methods=['DELETE'])
+def delete_character(char_id):
+    execute_db('DELETE FROM characters WHERE id=?', [char_id])
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/settings/last_reviewed', methods=['GET', 'PUT'])
+def last_reviewed():
+    if request.method == 'GET':
+        row = query_db(
+            "SELECT value FROM settings WHERE key='last_reviewed_character'",
+            one=True,
+        )
+        return jsonify(row or {'value': ''})
+    else:
+        data = request.get_json() or {}
+        execute_db(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('last_reviewed_character', ?)",
+            [str(data.get('value', ''))],
+        )
+        return jsonify({'status': 'ok'})
 
 
 if __name__ == '__main__':

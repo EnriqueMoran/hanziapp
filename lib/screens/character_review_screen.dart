@@ -27,10 +27,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   int currentIndex = 0;
   List<Offset?> _points = [];
 
-  // Placeholder for right-hand example box
-  String _rightData =
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '
-      'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
 
   Character? get current =>
       characters.isEmpty ? null : characters[currentIndex];
@@ -61,6 +57,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           characters = list;
           currentIndex = 0;
         });
+        if (list.isNotEmpty) {
+          CharacterApi.updateLastReviewed(list.first.id);
+        }
       }
     });
   }
@@ -83,6 +82,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         currentIndex--;
         _clearDrawing();
       });
+      CharacterApi.updateLastReviewed(current!.id);
     }
   }
 
@@ -92,11 +92,24 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         currentIndex++;
         _clearDrawing();
       });
+      CharacterApi.updateLastReviewed(current!.id);
     }
   }
 
   void _deleteCharacter() {
-    // TODO: implement API delete and refresh
+    if (current != null) {
+      CharacterApi.deleteCharacter(current!.id).then((_) {
+        setState(() {
+          characters.removeAt(currentIndex);
+          if (currentIndex >= characters.length) {
+            currentIndex = characters.isEmpty ? 0 : characters.length - 1;
+          }
+        });
+        if (characters.isNotEmpty) {
+          CharacterApi.updateLastReviewed(current!.id);
+        }
+      });
+    }
   }
 
   void _editCharacter() {
@@ -108,21 +121,24 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         _pinyinController.text = current?.pinyin ?? '';
         _meaningController.text = current?.meaning ?? '';
         _detailsController.text = current?.other ?? '';
-        _rightController.text = _rightData;
+        _rightController.text = current?.examples ?? '';
       });
     } else {
       // Save changes
       if (current != null) {
         setState(() {
           characters[currentIndex] = Character(
+            id: current!.id,
             character: _hanziController.text,
             pinyin: _pinyinController.text,
             meaning: _meaningController.text,
             level: current!.level,
             tags: current!.tags,
             other: _detailsController.text,
+            examples: _rightController.text,
           );
-          _rightData = _rightController.text;
+          CharacterApi.updateCharacter(characters[currentIndex]);
+          CharacterApi.updateLastReviewed(current!.id);
           _editing = false;
         });
       }
@@ -137,7 +153,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       _pinyinController.text = current?.pinyin ?? '';
       _meaningController.text = current?.meaning ?? '';
       _detailsController.text = current?.other ?? '';
-      _rightController.text = _rightData;
+      _rightController.text = current?.examples ?? '';
     });
   }
 
@@ -292,7 +308,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                     )
                   : SingleChildScrollView(
                       child: SelectableText(
-                        _rightData,
+                        current?.examples ?? '',
                         style: TextStyle(fontSize: 14),
                       ),
                     ),
