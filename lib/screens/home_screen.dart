@@ -82,7 +82,7 @@ class HomeScreen extends StatelessWidget {
             _fullWidthButton(context, 'Edit groups', const GroupEditScreen()),
             const SizedBox(height: 12),
             _fullWidthButton(context, 'Add character', const AddCharacterScreen()),
-            _fullWidthButton(context, 'Delete character', const DeleteCharacterScreen()),
+            _fullWidthButton(context, 'Delete characters', const DeleteCharacterScreen()),
           ],
         ),
       ),
