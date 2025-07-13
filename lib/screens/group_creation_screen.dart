@@ -111,21 +111,25 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
 
     Widget content;
     if (_showGroupOnly) {
-      content = ReorderableWrap(
-        needsLongPressDraggable: true,
-        onReorder: _reorder,
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final c in _selected)
-            Container(key: ValueKey(c.id), child: _buildCharacterTile(c)),
-        ],
+      content = SingleChildScrollView(
+        child: ReorderableWrap(
+          needsLongPressDraggable: true,
+          onReorder: _reorder,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final c in _selected)
+              Container(key: ValueKey(c.id), child: _buildCharacterTile(c)),
+          ],
+        ),
       );
     } else {
-      content = Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [for (final c in items) _buildCharacterTile(c)],
+      content = SingleChildScrollView(
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [for (final c in items) _buildCharacterTile(c)],
+        ),
       );
     }
 
