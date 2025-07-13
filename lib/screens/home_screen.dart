@@ -70,7 +70,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             _fullWidthButton(context, 'Review full vocabulary',
-                const CharacterReviewScreen()),
+                CharacterReviewScreen()),
             _fullWidthButton(context, 'Review batches and groups',
                 const BatchGroupSelectionScreen()),
             const SizedBox(height: 12),

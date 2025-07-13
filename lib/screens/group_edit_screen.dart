@@ -92,6 +92,29 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
     });
   }
 
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete group?'),
+        content: const Text('Are you sure you want to delete this group?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteGroup();
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget content = const SizedBox.shrink();
@@ -132,8 +155,8 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _save,
-                    child: const Text('Save'),
+                    onPressed: _confirmDelete,
+                    child: const Text('Delete'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -146,8 +169,8 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _deleteGroup,
-                    child: const Text('Delete'),
+                    onPressed: _save,
+                    child: const Text('Save'),
                   ),
                 ),
               ],

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 
 class CharacterReviewScreen extends StatefulWidget {
-  const CharacterReviewScreen({Key? key}) : super(key: key);
+  final List<Character>? initialCharacters;
+  final String? batchValue;
+
+  const CharacterReviewScreen({Key? key, this.initialCharacters, this.batchValue})
+      : super(key: key);
 
   @override
   State<CharacterReviewScreen> createState() => _CharacterReviewScreenState();
@@ -50,18 +54,26 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     _detailsController = TextEditingController();
     _rightController = TextEditingController();
 
-    // Fetch all characters on startup
-    CharacterApi.fetchAll().then((list) {
-      if (mounted) {
-        setState(() {
-          characters = list;
-          currentIndex = 0;
-        });
-        if (list.isNotEmpty) {
-          CharacterApi.updateLastReviewed(list.first.id);
-        }
+    if (widget.initialCharacters != null) {
+      characters = List.of(widget.initialCharacters!);
+      batchValue = widget.batchValue ?? 'None';
+      if (characters.isNotEmpty) {
+        CharacterApi.updateLastReviewed(characters.first.id);
       }
-    });
+    } else {
+      // Fetch all characters on startup
+      CharacterApi.fetchAll().then((list) {
+        if (mounted) {
+          setState(() {
+            characters = list;
+            currentIndex = 0;
+          });
+          if (list.isNotEmpty) {
+            CharacterApi.updateLastReviewed(list.first.id);
+          }
+        }
+      });
+    }
   }
 
   @override
