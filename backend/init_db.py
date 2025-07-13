@@ -1,12 +1,21 @@
 import json
 import sqlite3
 
+
+
 conn = sqlite3.connect('hanzi.db')
 cur = conn.cursor()
-cur.execute('CREATE TABLE IF NOT EXISTS characters (id INTEGER PRIMARY KEY AUTOINCREMENT, character TEXT UNIQUE, pinyin TEXT, meaning TEXT, level TEXT, tags TEXT, other TEXT, examples TEXT)')
-cur.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
-cur.execute('CREATE TABLE IF NOT EXISTS batches (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
-cur.execute('CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+
+cur.execute('DROP TABLE IF EXISTS characters')
+cur.execute('DROP TABLE IF EXISTS settings')
+cur.execute('DROP TABLE IF EXISTS batches')
+cur.execute('DROP TABLE IF EXISTS groups')
+
+
+cur.execute('CREATE TABLE characters (id INTEGER PRIMARY KEY AUTOINCREMENT, character TEXT UNIQUE, pinyin TEXT, meaning TEXT, level TEXT, tags TEXT, other TEXT, examples TEXT)')
+cur.execute('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)')
+cur.execute('CREATE TABLE batches (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+cur.execute('CREATE TABLE groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
 with open('data.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 for item in data:
