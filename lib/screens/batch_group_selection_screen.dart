@@ -117,21 +117,21 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
               ],
             ),
             const Spacer(),
-            Text('Grupo seleccionado: $_selectedName'),
+            Text('Selected: $_selectedName'),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancelar'),
+                    child: const Text('Cancel'),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _startReview,
-                    child: const Text('Revisar'),
+                    child: const Text('Review'),
                   ),
                 ),
               ],

@@ -52,7 +52,7 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
     while (index < chars.length) {
       final end = min(index + size, chars.length);
       final sub = chars.sublist(index, end);
-      batches.add(Batch(id: 0, name: 'Lote $count', characters: sub));
+      batches.add(Batch(id: 0, name: 'Batch $count', characters: sub));
       index = end;
       count++;
     }
@@ -114,15 +114,15 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _createBatches,
-                    child: const Text('Crear'),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancelar'),
+                    onPressed: _createBatches,
+                    child: const Text('Create'),
                   ),
                 ),
               ],
