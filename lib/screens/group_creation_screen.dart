@@ -67,17 +67,16 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
       );
       return;
     }
-    final group = Group(
-      id: 0,
-      name: _nameController.text.trim(),
-      characters: [for (final c in _selected) c.character],
+
+    final id = await GroupApi.createGroup(
+      _nameController.text.trim(),
+      _selected.map((c) => c.id).toList(),
     );
-    await GroupApi.createGroup(group);
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(
-              'Group "${_nameController.text}" saved with ${_selected.length} characters.')),
+          content: Text('Group "${_nameController.text}" saved${id != null ? ' (id $id)' : ''}.')),
     );
     _nameController.clear();
     _clearSelection();

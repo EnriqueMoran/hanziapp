@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
+import '../api/group_api.dart';
 import 'package:reorderables/reorderables.dart';
 
 class GroupEditScreen extends StatefulWidget {
@@ -16,33 +17,39 @@ class GroupEntry {
 }
 
 class _GroupEditScreenState extends State<GroupEditScreen> {
-  List<String> _groups = [];
-  String? _selectedGroup;
-  final Map<String, List<GroupEntry>> _groupMap = {};
+  List<Group> _groups = [];
+  int? _selectedId;
+  final Map<int, List<GroupEntry>> _groupMap = {};
 
   @override
   void initState() {
     super.initState();
-    CharacterApi.fetchAll().then((list) {
-      if (mounted) {
-        final g1 = <GroupEntry>[];
-        final g2 = <GroupEntry>[];
-        for (var i = 0; i < list.length; i++) {
-          final entry = GroupEntry(list[i]);
-          (i.isEven ? g1 : g2).add(entry);
-        }
-        setState(() {
-          _groupMap['Group 1'] = g1;
-          _groupMap['Group 2'] = g2;
-          _groups = _groupMap.keys.toList();
-          _selectedGroup = _groups.isEmpty ? null : _groups.first;
-        });
+    _load();
+  }
+
+  Future<void> _load() async {
+    final chars = await CharacterApi.fetchAll();
+    final groups = await GroupApi.fetchAll();
+    if (!mounted) return;
+    final map = <int, List<GroupEntry>>{};
+    for (final g in groups) {
+      final entries = <GroupEntry>[];
+      for (final id in g.characterIds) {
+        final match = chars.where((e) => e.id == id);
+        if (match.isNotEmpty) entries.add(GroupEntry(match.first));
       }
+      map[g.id] = entries;
+    }
+    setState(() {
+      _groups = groups;
+      _groupMap.clear();
+      _groupMap.addAll(map);
+      _selectedId = groups.isEmpty ? null : groups.first.id;
     });
   }
 
   List<GroupEntry> get _currentEntries =>
-      _groupMap[_selectedGroup] ?? <GroupEntry>[];
+      _groupMap[_selectedId] ?? <GroupEntry>[];
 
   void _toggleEntry(GroupEntry entry) {
     setState(() => entry.selected = !entry.selected);
@@ -56,20 +63,39 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
     });
   }
 
-  void _save() {
-    if (_selectedGroup != null) {
+  void _save() async {
+    final id = _selectedId;
+    if (id != null) {
+      final group = _groups.firstWhere((g) => g.id == id);
+      await GroupApi.updateGroup(
+        id,
+        group.name,
+        _currentEntries.where((e) => e.selected).map((e) => e.character.id).toList(),
+      );
+      if (!mounted) return;
       final count = _currentEntries.where((e) => e.selected).length;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Group "$_selectedGroup" saved with $count characters.')),
+        SnackBar(content: Text('Group "${group.name}" saved with $count characters.')),
       );
     }
+  }
+
+  void _deleteGroup() async {
+    final id = _selectedId;
+    if (id == null) return;
+    await GroupApi.deleteGroup(id);
+    if (!mounted) return;
+    setState(() {
+      _groupMap.remove(id);
+      _groups.removeWhere((g) => g.id == id);
+      _selectedId = _groups.isEmpty ? null : _groups.first.id;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     Widget content = const SizedBox.shrink();
-    if (_selectedGroup != null) {
+    if (_selectedId != null) {
       content = SingleChildScrollView(
         child: ReorderableWrap(
           needsLongPressDraggable: true,
@@ -90,14 +116,14 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            DropdownButton<String>(
-              value: _selectedGroup,
+            DropdownButton<int>(
+              value: _selectedId,
               hint: const Text('Select group'),
               items: [
                 for (final g in _groups)
-                  DropdownMenuItem(value: g, child: Text(g)),
+                  DropdownMenuItem(value: g.id, child: Text(g.name)),
               ],
-              onChanged: (v) => setState(() => _selectedGroup = v),
+              onChanged: (v) => setState(() => _selectedId = v),
             ),
             const SizedBox(height: 16),
             Expanded(child: content),
@@ -115,6 +141,13 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _deleteGroup,
+                    child: const Text('Delete'),
                   ),
                 ),
               ],

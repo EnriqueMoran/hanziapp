@@ -113,6 +113,33 @@ def delete_character(char_id):
     return jsonify({'status': 'ok'})
 
 
+@app.route('/groups', methods=['GET', 'POST'])
+def groups():
+    if request.method == 'GET':
+        rows = query_db('SELECT * FROM groups')
+        return jsonify(rows)
+    data = request.get_json() or {}
+    execute_db(
+        'INSERT INTO groups (name, characters) VALUES (?, ?)',
+        [data.get('name', ''), data.get('characters', '')],
+    )
+    row = query_db('SELECT last_insert_rowid() as id', one=True)
+    return jsonify({'id': row['id']})
+
+
+@app.route('/groups/<int:gid>', methods=['PUT', 'DELETE'])
+def update_group(gid):
+    if request.method == 'DELETE':
+        execute_db('DELETE FROM groups WHERE id=?', [gid])
+        return jsonify({'status': 'ok'})
+    data = request.get_json() or {}
+    execute_db(
+        'UPDATE groups SET name=?, characters=? WHERE id=?',
+        [data.get('name', ''), data.get('characters', ''), gid],
+    )
+    return jsonify({'status': 'ok'})
+
+
 @app.route('/settings/last_reviewed', methods=['GET', 'PUT'])
 def last_reviewed():
     if request.method == 'GET':
