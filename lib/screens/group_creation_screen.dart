@@ -58,14 +58,18 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
           title: const Text('Name required'),
           content: const Text('Please enter a group name.'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK')),
           ],
         ),
       );
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Group "${_nameController.text}" saved with ${_selected.length} characters.')),
+      SnackBar(
+          content: Text(
+              'Group "${_nameController.text}" saved with ${_selected.length} characters.')),
     );
   }
 
@@ -73,31 +77,30 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
     final selected = _isSelected(c);
     return GestureDetector(
       onTap: () => _toggleCharacter(c),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            margin: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: selected ? Colors.blue : Colors.grey),
-            ),
-            child: Center(
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: selected ? Colors.blue : Colors.grey),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Center(
               child: Text(
                 c.character,
                 style: const TextStyle(fontSize: 24),
               ),
             ),
-          ),
-          if (selected)
-            const Positioned(
-              right: 2,
-              bottom: 2,
-              child: Icon(Icons.check_circle, color: Colors.green, size: 16),
-            ),
-        ],
+            if (selected)
+              const Positioned(
+                right: -4,
+                bottom: -4,
+                child: Icon(Icons.check_circle, color: Colors.green, size: 16),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -119,14 +122,10 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
         ],
       );
     } else {
-      content = GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 5,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-        ),
-        itemCount: items.length,
-        itemBuilder: (_, i) => _buildCharacterTile(items[i]),
+      content = Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [for (final c in items) _buildCharacterTile(c)],
       );
     }
 
