@@ -79,24 +79,22 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
       onTap: () => _toggleCharacter(c),
       child: Container(
         margin: const EdgeInsets.all(4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: selected ? Colors.blue : Colors.grey),
         ),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Center(
-              child: Text(
-                c.character,
-                style: const TextStyle(fontSize: 24),
-              ),
+            Text(
+              c.character,
+              style: const TextStyle(fontSize: 24),
             ),
             if (selected)
               const Positioned(
+                top: -4,
                 right: -4,
-                bottom: -4,
                 child: Icon(Icons.check_circle, color: Colors.green, size: 16),
               ),
           ],
