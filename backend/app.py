@@ -37,6 +37,22 @@ def execute_db(query, args=()):
     cur.close()
 
 
+@app.route('/batches', methods=['GET', 'POST'])
+def batches():
+    if request.method == 'GET':
+        rows = query_db('SELECT * FROM batches')
+        return jsonify(rows)
+    else:
+        data = request.get_json() or []
+        execute_db('DELETE FROM batches')
+        for item in data:
+            execute_db(
+                'INSERT INTO batches (name, characters) VALUES (?, ?)',
+                [item.get('name', ''), item.get('characters', '')],
+            )
+        return jsonify({'status': 'ok'})
+
+
 @app.route('/characters')
 def list_characters():
     rows = query_db('SELECT * FROM characters')

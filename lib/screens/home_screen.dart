@@ -70,13 +70,15 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _fullWidthButton(context, 'Review full vocabulary', const CharacterReviewScreen()),
-            _fullWidthButton(context, 'Review batches and groups', const BatchGroupSelectionScreen()),
+            _fullWidthButton(context, 'Review full vocabulary',
+                const CharacterReviewScreen()),
+            _fullWidthButton(context, 'Review batches and groups',
+                const BatchGroupSelectionScreen()),
             const SizedBox(height: 12),
             _halfWidthButtonRow(
               context,
               'Create batch',
-              const BatchCreationScreen(),
+              BatchCreationScreen(),
               'Create group',
               const GroupCreationScreen(),
             ),
@@ -88,8 +90,10 @@ class HomeScreen extends StatelessWidget {
               const GroupEditScreen(),
             ),
             const SizedBox(height: 12),
-            _fullWidthButton(context, 'Add character', const AddCharacterScreen()),
-            _fullWidthButton(context, 'Delete character', const DeleteCharacterScreen()),
+            _fullWidthButton(
+                context, 'Add character', const AddCharacterScreen()),
+            _fullWidthButton(
+                context, 'Delete character', const DeleteCharacterScreen()),
           ],
         ),
       ),
