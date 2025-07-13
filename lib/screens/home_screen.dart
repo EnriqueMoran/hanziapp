@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'character_review_screen.dart';
 import 'batch_group_selection_screen.dart';
 import 'batch_creation_screen.dart';
-import 'batch_edit_screen.dart';
 import 'group_creation_screen.dart';
 import 'group_edit_screen.dart';
 import 'add_character_screen.dart';
@@ -82,13 +81,7 @@ class HomeScreen extends StatelessWidget {
               'Create group',
               const GroupCreationScreen(),
             ),
-            _halfWidthButtonRow(
-              context,
-              'Edit batches',
-              const BatchEditScreen(),
-              'Edit groups',
-              const GroupEditScreen(),
-            ),
+            _fullWidthButton(context, 'Edit groups', const GroupEditScreen()),
             const SizedBox(height: 12),
             _fullWidthButton(
                 context, 'Add character', const AddCharacterScreen()),
