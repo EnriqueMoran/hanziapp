@@ -53,6 +53,27 @@ def batches():
         return jsonify({'status': 'ok'})
 
 
+@app.route('/groups', methods=['GET', 'POST'])
+def groups():
+    if request.method == 'GET':
+        rows = query_db('SELECT * FROM groups')
+        return jsonify(rows)
+    else:
+        data = request.get_json() or {}
+        if isinstance(data, list):
+            for item in data:
+                execute_db(
+                    'INSERT INTO groups (name, characters) VALUES (?, ?)',
+                    [item.get('name', ''), item.get('characters', '')],
+                )
+        else:
+            execute_db(
+                'INSERT INTO groups (name, characters) VALUES (?, ?)',
+                [data.get('name', ''), data.get('characters', '')],
+            )
+        return jsonify({'status': 'ok'})
+
+
 @app.route('/characters')
 def list_characters():
     rows = query_db('SELECT * FROM characters')

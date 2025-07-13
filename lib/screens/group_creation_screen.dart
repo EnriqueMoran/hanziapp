@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
+import '../api/group_api.dart';
 import 'package:reorderables/reorderables.dart';
 
 class GroupCreationScreen extends StatefulWidget {
@@ -50,7 +51,7 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
 
   void _clearSelection() => setState(() => _selected.clear());
 
-  void _saveGroup() {
+  void _saveGroup() async {
     if (_nameController.text.trim().isEmpty) {
       showDialog(
         context: context,
@@ -66,11 +67,20 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
       );
       return;
     }
+    final group = Group(
+      id: 0,
+      name: _nameController.text.trim(),
+      characters: [for (final c in _selected) c.character],
+    );
+    await GroupApi.createGroup(group);
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text(
               'Group "${_nameController.text}" saved with ${_selected.length} characters.')),
     );
+    _nameController.clear();
+    _clearSelection();
   }
 
   Widget _buildCharacterTile(Character c) {
