@@ -7,9 +7,11 @@ class CharacterReviewScreen extends StatefulWidget {
   final List<Character>? initialCharacters;
   final String? batchValue;
 
-  const CharacterReviewScreen(
-      {Key? key, this.initialCharacters, this.batchValue})
-      : super(key: key);
+  const CharacterReviewScreen({
+    Key? key,
+    this.initialCharacters,
+    this.batchValue,
+  }) : super(key: key);
 
   @override
   State<CharacterReviewScreen> createState() => _CharacterReviewScreenState();
@@ -101,7 +103,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     try {
       final res = await http.head(Uri.parse(url));
       if (res.statusCode == 200) {
-        await _player.play(UrlSource(url));
+        await _player.play(url);
       }
     } catch (_) {}
   }
@@ -207,13 +209,25 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildToggle(
-            'Auto Sound', autoSound, (v) => setState(() => autoSound = v)),
+          'Auto Sound',
+          autoSound,
+          (v) => setState(() => autoSound = v),
+        ),
         _buildToggle(
-            'Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
+          'Show Hanzi',
+          showHanzi,
+          (v) => setState(() => showHanzi = v),
+        ),
         _buildToggle(
-            'Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
-        _buildToggle('Show Translation', showTranslation,
-            (v) => setState(() => showTranslation = v)),
+          'Show Pinyin',
+          showPinyin,
+          (v) => setState(() => showPinyin = v),
+        ),
+        _buildToggle(
+          'Show Translation',
+          showTranslation,
+          (v) => setState(() => showTranslation = v),
+        ),
       ],
     );
 
@@ -286,10 +300,12 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       children: [
         ElevatedButton(onPressed: _clearDrawing, child: Text('RESTART')),
         SizedBox(height: 8),
-        Row(children: [
-          Text('RANDOM'),
-          Switch(value: random, onChanged: (v) => setState(() => random = v)),
-        ]),
+        Row(
+          children: [
+            Text('RANDOM'),
+            Switch(value: random, onChanged: (v) => setState(() => random = v)),
+          ],
+        ),
         SizedBox(height: 8),
         Text('Batch/ Group: $batchValue', style: TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
@@ -379,23 +395,26 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 children: [
                   ElevatedButton(
                     onPressed: _deleteCharacter,
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
                     child: Text('DELETE CHARACTER'),
                   ),
                   SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _editCharacter,
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: _editing ? Colors.green : null),
+                      backgroundColor: _editing ? Colors.green : null,
+                    ),
                     child: Text(_editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
                   ),
                   if (_editing) ...[
                     SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _cancelEdit,
-                      style:
-                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
                       child: Text('CANCEL CHANGES'),
                     ),
                   ],
@@ -409,26 +428,28 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         SizedBox(
           width: panelWidth,
           height: panelHeight,
-          child: LayoutBuilder(builder: (ctx, cons) {
-            return GestureDetector(
-              onPanUpdate: (details) =>
-                  setState(() => _points.add(details.localPosition)),
-              onPanEnd: (_) => _points.add(null),
-              child: Container(
-                width: cons.maxWidth,
-                height: cons.maxHeight,
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  border: Border.all(color: Colors.white24),
-                  borderRadius: BorderRadius.circular(12),
+          child: LayoutBuilder(
+            builder: (ctx, cons) {
+              return GestureDetector(
+                onPanUpdate: (details) =>
+                    setState(() => _points.add(details.localPosition)),
+                onPanEnd: (_) => _points.add(null),
+                child: Container(
+                  width: cons.maxWidth,
+                  height: cons.maxHeight,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    border: Border.all(color: Colors.white24),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: CustomPaint(
+                    painter: _DrawingPainter(points: _points),
+                    child: SizedBox.expand(),
+                  ),
                 ),
-                child: CustomPaint(
-                  painter: _DrawingPainter(points: _points),
-                  child: SizedBox.expand(),
-                ),
-              ),
-            );
-          }),
+              );
+            },
+          ),
         ),
         Expanded(child: SizedBox()),
       ],
@@ -450,10 +471,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
             child: Text('PREVIOUS'),
           ),
           SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: _goToNextCharacter,
-            child: Text('NEXT'),
-          ),
+          ElevatedButton(onPressed: _goToNextCharacter, child: Text('NEXT')),
         ],
       ),
     );
