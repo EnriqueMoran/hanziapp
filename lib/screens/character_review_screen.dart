@@ -181,7 +181,8 @@ Future<void> _checkAudioAvailable() async {
 
   try {
     await _player.stop();
-    await _player.setUrl(url);
+    //await _player.setUrl(url);
+    await _player.setSourceUrl(url);
     setState(() => _hasAudio = true);
   } catch (_) {
     setState(() => _hasAudio = false);
@@ -198,7 +199,8 @@ Future<void> _playAudio() async {
 
   try {
     await _player.stop();
-    await _player.setUrl(url);
+    //await _player.setUrl(url);
+    await _player.setSourceUrl(url);
     await _player.resume();
   } catch (e) {
     debugPrint('Error playing audio: $e');
@@ -206,16 +208,16 @@ Future<void> _playAudio() async {
 }
 
   Future<void> _initializeRecognizer() async {
-    setState(() => _recognizerStatus = 'verificando modelo...');
+    setState(() => _recognizerStatus = 'verifying model...');
     _inkRecognizer = mlkit.DigitalInkRecognizer(languageCode: 'zh-Hani');
     try {
       final downloaded = await _modelManager.isModelDownloaded('zh-Hani');
       if (!downloaded) {
-        setState(() => _recognizerStatus = 'descargando modelo...');
+        setState(() => _recognizerStatus = 'downloading model...');
         await _modelManager.downloadModel('zh-Hani');
       }
       setState(() {
-        _recognizerStatus = 'modelo listo';
+        _recognizerStatus = 'model ready';
         _modelReady = true;
       });
     } catch (e) {
