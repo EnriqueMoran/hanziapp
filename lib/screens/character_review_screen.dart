@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:http/http.dart' as http;
 import '../api/character_api.dart';
 
 class CharacterReviewScreen extends StatefulWidget {
@@ -98,7 +99,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     if (char == null || char.isEmpty) return;
     final url = 'https://data.dong-chinese.com/hsk-audio/' + char + '.mp3';
     try {
-      await _player.play(url);
+      final res = await http.head(Uri.parse(url));
+      if (res.statusCode == 200) {
+        await _player.play(UrlSource(url));
+      }
     } catch (_) {}
   }
 
