@@ -239,6 +239,17 @@ Future<void> _playAudio() async {
     } else {
       // Save changes
       if (current == null) return;
+      if (_hanziController.text.trim().isEmpty ||
+          _pinyinController.text.trim().isEmpty ||
+          _meaningController.text.trim().isEmpty ||
+          _levelController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('Please fill hanzi, pinyin, translation and level.')),
+        );
+        return;
+      }
       setState(() {
         characters[currentIndex] = Character(
           id: current!.id,

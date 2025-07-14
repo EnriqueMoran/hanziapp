@@ -79,6 +79,16 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
   }
 
   Future<void> _save() async {
+    if (_hanziController.text.trim().isEmpty ||
+        _pinyinController.text.trim().isEmpty ||
+        _meaningController.text.trim().isEmpty ||
+        _levelController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Please fill hanzi, pinyin, translation and level.')),
+      );
+      return;
+    }
     final tags = _tagsController.text
         .split(',')
         .map((e) => e.trim())
@@ -97,7 +107,13 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
       ),
     );
     if (!mounted) return;
-    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Character added.')),
+    );
+    _clearAll();
+    CharacterApi.fetchTags().then((tags) {
+      if (mounted) setState(() => _allTags = tags);
+    });
   }
 
 
