@@ -162,6 +162,7 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _confirmDelete,
+                    style: UiScale.buttonStyle(backgroundColor: Colors.red),
                     child: const Text('Delete'),
                   ),
                 ),
@@ -169,6 +170,7 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
+                    style: UiScale.buttonStyle(),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -176,6 +178,7 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _save,
+                    style: UiScale.buttonStyle(),
                     child: const Text('Save'),
                   ),
                 ),

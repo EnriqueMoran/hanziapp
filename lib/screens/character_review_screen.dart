@@ -533,10 +533,15 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final controls = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ElevatedButton(onPressed: _restartReview, child: Text('RESTART')),
+        ElevatedButton(
+          onPressed: _restartReview,
+          style: UiScale.buttonStyle(),
+          child: Text('RESTART'),
+        ),
         const SizedBox(height: 8),
         ElevatedButton(
           onPressed: _hasAudio ? _playAudio : null,
+          style: UiScale.buttonStyle(),
           child: const Text('LISTEN'),
         ),
       ],
@@ -653,15 +658,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 children: [
                   ElevatedButton(
                     onPressed: _deleteCharacter,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
+                    style: UiScale.buttonStyle(backgroundColor: Colors.red),
                     child: Text('DELETE CHARACTER'),
                   ),
                   SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _editCharacter,
-                    style: ElevatedButton.styleFrom(
+                    style: UiScale.buttonStyle(
                       backgroundColor: _editing ? Colors.green : null,
                     ),
                     child: Text(_editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
@@ -670,9 +673,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                     SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _cancelEdit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
+                      style: UiScale.buttonStyle(backgroundColor: Colors.red),
                       child: Text('CANCEL CHANGES'),
                     ),
                   ],
@@ -767,16 +768,21 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         children: [
           ElevatedButton(
             onPressed: _clearDrawing,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: UiScale.buttonStyle(backgroundColor: Colors.red),
             child: Text('DELETE'),
           ),
           SizedBox(width: 8),
           ElevatedButton(
             onPressed: _goToPreviousCharacter,
+            style: UiScale.buttonStyle(),
             child: Text('PREVIOUS'),
           ),
           SizedBox(width: 8),
-          ElevatedButton(onPressed: _goToNextCharacter, child: Text('NEXT')),
+          ElevatedButton(
+            onPressed: _goToNextCharacter,
+            style: UiScale.buttonStyle(),
+            child: Text('NEXT'),
+          ),
         ],
       ),
     );

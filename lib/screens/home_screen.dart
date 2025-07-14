@@ -6,6 +6,7 @@ import 'group_creation_screen.dart';
 import 'group_edit_screen.dart';
 import 'add_character_screen.dart';
 import 'delete_character_screen.dart';
+import '../ui_scale.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -15,11 +16,9 @@ class HomeScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: ElevatedButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => target),
-        ),
-        style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        onPressed: () =>
+            Navigator.push(context, MaterialPageRoute(builder: (_) => target)),
+        style: UiScale.buttonStyle(),
         child: Text(label),
       ),
     );
@@ -43,6 +42,7 @@ class HomeScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (_) => target1),
               ),
+              style: UiScale.buttonStyle(),
               child: Text(label1),
             ),
           ),
@@ -53,6 +53,7 @@ class HomeScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (_) => target2),
               ),
+              style: UiScale.buttonStyle(),
               child: Text(label2),
             ),
           ),
@@ -69,10 +70,16 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _fullWidthButton(context, 'Review full vocabulary',
-                CharacterReviewScreen()),
-            _fullWidthButton(context, 'Review batches and groups',
-                const BatchGroupSelectionScreen()),
+            _fullWidthButton(
+              context,
+              'Review full vocabulary',
+              CharacterReviewScreen(),
+            ),
+            _fullWidthButton(
+              context,
+              'Review batches and groups',
+              const BatchGroupSelectionScreen(),
+            ),
             const SizedBox(height: 12),
             _halfWidthButtonRow(
               context,
@@ -83,8 +90,16 @@ class HomeScreen extends StatelessWidget {
             ),
             _fullWidthButton(context, 'Edit groups', const GroupEditScreen()),
             const SizedBox(height: 12),
-            _fullWidthButton(context, 'Add character', const AddCharacterScreen()),
-            _fullWidthButton(context, 'Delete characters', const DeleteCharacterScreen()),
+            _fullWidthButton(
+              context,
+              'Add character',
+              const AddCharacterScreen(),
+            ),
+            _fullWidthButton(
+              context,
+              'Delete characters',
+              const DeleteCharacterScreen(),
+            ),
           ],
         ),
       ),

@@ -160,6 +160,7 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => setState(() => _showGroupOnly = false),
+                    style: UiScale.buttonStyle(),
                     child: const Text('Show All'),
                   ),
                 ),
@@ -167,6 +168,7 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => setState(() => _showGroupOnly = true),
+                    style: UiScale.buttonStyle(),
                     child: const Text('Show Group'),
                   ),
                 ),
@@ -174,6 +176,7 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _saveGroup,
+                    style: UiScale.buttonStyle(),
                     child: const Text('Save'),
                   ),
                 ),
@@ -181,6 +184,7 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _clearSelection,
+                    style: UiScale.buttonStyle(),
                     child: const Text('Cancel'),
                   ),
                 ),

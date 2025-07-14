@@ -4,12 +4,14 @@ import '../api/group_api.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
 import 'character_review_screen.dart';
+import '../ui_scale.dart';
 
 class BatchGroupSelectionScreen extends StatefulWidget {
   const BatchGroupSelectionScreen({Key? key}) : super(key: key);
 
   @override
-  State<BatchGroupSelectionScreen> createState() => _BatchGroupSelectionScreenState();
+  State<BatchGroupSelectionScreen> createState() =>
+      _BatchGroupSelectionScreenState();
 }
 
 class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
@@ -154,6 +156,7 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
+                    style: UiScale.buttonStyle(),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -161,11 +164,12 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _startReview,
+                    style: UiScale.buttonStyle(),
                     child: const Text('Review'),
                   ),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
