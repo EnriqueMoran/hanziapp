@@ -236,7 +236,7 @@ Future<void> _playAudio() async {
         _detailsController.text = current?.other ?? '';
         _rightController.text = current?.examples ?? '';
         _levelController.text = current?.level ?? '';
-        _tagsController.text = current?.tags.join(',');
+        _tagsController.text = current!.tags.join(',');
       });
     } else {
       // Save changes
@@ -287,7 +287,7 @@ Future<void> _playAudio() async {
       _detailsController.text = current?.other ?? '';
       _rightController.text = current?.examples ?? '';
       _levelController.text = current?.level ?? '';
-      _tagsController.text = current?.tags.join(',');
+      _tagsController.text = current!.tags.join(',');
     });
   }
 
