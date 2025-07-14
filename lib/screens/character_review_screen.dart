@@ -56,7 +56,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
     if (widget.initialCharacters != null) {
       characters = List.of(widget.initialCharacters!);
-      batchValue = widget.batchValue ?? 'None';
+      batchValue =
+          (widget.batchValue != null && widget.batchValue!.isNotEmpty)
+              ? widget.batchValue!
+              : 'None';
       if (characters.isNotEmpty) {
         CharacterApi.updateLastReviewed(characters.first.id);
       }
@@ -267,7 +270,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           Switch(value: random, onChanged: (v) => setState(() => random = v)),
         ]),
         SizedBox(height: 8),
-        Text('Batch: $batchValue', style: TextStyle(fontSize: 16)),
+        Text('Batch/ Group: $batchValue', style: TextStyle(fontSize: 16)),
       ],
     );
 

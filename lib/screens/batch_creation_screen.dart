@@ -18,6 +18,11 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
   List<Character> _characters = [];
 
   int get _total => _characters.length;
+  int get _batchCount {
+    final size = int.tryParse(_sizeController.text) ?? 0;
+    if (size <= 0 || _total == 0) return 0;
+    return (_total + size - 1) ~/ size;
+  }
 
   @override
   void initState() {
@@ -93,12 +98,15 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
             TextField(
               controller: _sizeController,
               keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 labelText: 'Characters per batch',
               ),
             ),
             const SizedBox(height: 12),
             Wrap(spacing: 8, children: percentButtons),
+            const SizedBox(height: 12),
+            Text('Total batches: $_batchCount'),
             const SizedBox(height: 12),
             Row(
               children: [
