@@ -99,6 +99,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         if (characters.isNotEmpty) {
           _updateLastCharacter(characters[currentIndex].id);
           _checkAudioAvailable();
+          if (autoSound && _hasAudio) _playAudio();
         }
       });
     }
@@ -218,6 +219,7 @@ Future<void> _playAudio() async {
       if (characters.isNotEmpty) {
         _updateLastCharacter(current!.id);
         _checkAudioAvailable();
+        if (autoSound && _hasAudio) _playAudio();
       }
     });
   }
@@ -315,6 +317,7 @@ Future<void> _playAudio() async {
     if (characters.isNotEmpty) {
       _updateLastCharacter(characters[currentIndex].id);
       _checkAudioAvailable();
+      if (autoSound && _hasAudio) _playAudio();
     }
   }
 
@@ -341,6 +344,7 @@ Future<void> _playAudio() async {
       _points = [];
     });
     _checkAudioAvailable();
+    if (autoSound && _hasAudio) _playAudio();
   }
 
   String getCharacterAt(int offset) {
@@ -360,7 +364,10 @@ Future<void> _playAudio() async {
     final toggles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildToggle('Auto Sound', autoSound, (v) => setState(() => autoSound = v)),
+        _buildToggle('Auto Sound', autoSound, (v) {
+          setState(() => autoSound = v);
+          if (v && _hasAudio) _playAudio();
+        }),
         _buildToggle('Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
         _buildToggle('Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
         _buildToggle('Show Translation', showTranslation, (v) => setState(() => showTranslation = v)),
