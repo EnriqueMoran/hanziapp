@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
+import '../ui_scale.dart';
 import 'dart:async';
 import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
     as mlkit;
@@ -68,8 +69,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   Character? get current =>
       characters.isEmpty ? null : characters[currentIndex];
 
-  static const double _toggleWidth = 200;
-  static const double _controlsWidth = 180;
   static const double _drawingHeightRatio = 0.25;
 
   // Prevent accents from changing line height
@@ -136,12 +135,12 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   /// Clears the drawing panel and ink data.
   void _clearDrawing() => setState(() {
-        _points = [];
-        _ink.strokes.clear();
-        _strokePoints.clear();
-        _recognizedText = '';
-        _recognizedScore = null;
-      });
+    _points = [];
+    _ink.strokes.clear();
+    _strokePoints.clear();
+    _recognizedText = '';
+    _recognizedScore = null;
+  });
 
   Future<void> _chooseTag() async {
     if (_allTags.isEmpty) return;
@@ -160,7 +159,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     );
     if (tag != null) {
       final text = _tagsController.text;
-      final prefix = text.isNotEmpty && !text.trim().endsWith(',') ? '$text,' : text;
+      final prefix = text.isNotEmpty && !text.trim().endsWith(',')
+          ? '$text,'
+          : text;
       setState(() => _tagsController.text = '$prefix$tag,');
       _tagsController.selection = TextSelection.fromPosition(
         TextPosition(offset: _tagsController.text.length),
@@ -169,43 +170,43 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   }
 
   /// Checks audio availability by trying to set the audio URL.
-Future<void> _checkAudioAvailable() async {
-  final char = current?.character;
-  if (char == null || char.isEmpty) {
-    setState(() => _hasAudio = false);
-    return;
+  Future<void> _checkAudioAvailable() async {
+    final char = current?.character;
+    if (char == null || char.isEmpty) {
+      setState(() => _hasAudio = false);
+      return;
+    }
+
+    final encodedChar = Uri.encodeComponent(char);
+    final url = 'https://data.dong-chinese.com/hsk-audio/$encodedChar.mp3';
+
+    try {
+      await _player.stop();
+      //await _player.setUrl(url);
+      await _player.setSourceUrl(url);
+      setState(() => _hasAudio = true);
+    } catch (_) {
+      setState(() => _hasAudio = false);
+    }
   }
 
-  final encodedChar = Uri.encodeComponent(char);
-  final url = 'https://data.dong-chinese.com/hsk-audio/$encodedChar.mp3';
+  /// Plays the character audio.
+  Future<void> _playAudio() async {
+    final char = current?.character;
+    if (char == null || char.isEmpty) return;
 
-  try {
-    await _player.stop();
-    //await _player.setUrl(url);
-    await _player.setSourceUrl(url);
-    setState(() => _hasAudio = true);
-  } catch (_) {
-    setState(() => _hasAudio = false);
+    final encodedChar = Uri.encodeComponent(char);
+    final url = 'https://data.dong-chinese.com/hsk-audio/$encodedChar.mp3';
+
+    try {
+      await _player.stop();
+      //await _player.setUrl(url);
+      await _player.setSourceUrl(url);
+      await _player.resume();
+    } catch (e) {
+      debugPrint('Error playing audio: $e');
+    }
   }
-}
-
-/// Plays the character audio.
-Future<void> _playAudio() async {
-  final char = current?.character;
-  if (char == null || char.isEmpty) return;
-
-  final encodedChar = Uri.encodeComponent(char);
-  final url = 'https://data.dong-chinese.com/hsk-audio/$encodedChar.mp3';
-
-  try {
-    await _player.stop();
-    //await _player.setUrl(url);
-    await _player.setSourceUrl(url);
-    await _player.resume();
-  } catch (e) {
-    debugPrint('Error playing audio: $e');
-  }
-}
 
   Future<void> _initializeRecognizer() async {
     setState(() => _recognizerStatus = 'verifying model...');
@@ -224,10 +225,13 @@ Future<void> _playAudio() async {
       setState(() => _recognizerStatus = 'error: ' + e.toString());
     }
   }
+
   void _queueRecognition() {
     _recognizeDebounce?.cancel();
-    _recognizeDebounce =
-        Timer(const Duration(milliseconds: 300), _recognizeInk);
+    _recognizeDebounce = Timer(
+      const Duration(milliseconds: 300),
+      _recognizeInk,
+    );
   }
 
   Future<void> _recognizeInk() async {
@@ -315,8 +319,8 @@ Future<void> _playAudio() async {
           _levelController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content:
-                  Text('Please fill hanzi, pinyin, translation and level.')),
+            content: Text('Please fill hanzi, pinyin, translation and level.'),
+          ),
         );
         return;
       }
@@ -438,9 +442,21 @@ Future<void> _playAudio() async {
           setState(() => autoSound = v);
           if (v && _hasAudio) _playAudio();
         }),
-        _buildToggle('Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
-        _buildToggle('Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
-        _buildToggle('Show Translation', showTranslation, (v) => setState(() => showTranslation = v)),
+        _buildToggle(
+          'Show Hanzi',
+          showHanzi,
+          (v) => setState(() => showHanzi = v),
+        ),
+        _buildToggle(
+          'Show Pinyin',
+          showPinyin,
+          (v) => setState(() => showPinyin = v),
+        ),
+        _buildToggle(
+          'Show Translation',
+          showTranslation,
+          (v) => setState(() => showTranslation = v),
+        ),
       ],
     );
 
@@ -451,13 +467,13 @@ Future<void> _playAudio() async {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNeighbor(getCharacterAt(-2), 16),
+            _buildNeighbor(getCharacterAt(-2), UiScale.smallFont),
             SizedBox(width: 12),
-            _buildNeighbor(getCharacterAt(-1), 24),
+            _buildNeighbor(getCharacterAt(-1), UiScale.mediumFont),
             SizedBox(width: 24),
-            _buildNeighbor(getCharacterAt(1), 24),
+            _buildNeighbor(getCharacterAt(1), UiScale.mediumFont),
             SizedBox(width: 12),
-            _buildNeighbor(getCharacterAt(2), 16),
+            _buildNeighbor(getCharacterAt(2), UiScale.smallFont),
           ],
         ),
         SizedBox(height: 12),
@@ -465,7 +481,7 @@ Future<void> _playAudio() async {
           TextField(
             controller: _hanziController,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 48),
+            style: TextStyle(fontSize: UiScale.largeFont),
           )
         else
           FittedBox(
@@ -473,7 +489,7 @@ Future<void> _playAudio() async {
             child: SelectableText(
               showHanzi ? (current?.character ?? '') : '',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 48),
+              style: TextStyle(fontSize: UiScale.largeFont),
             ),
           ),
         SizedBox(height: 8),
@@ -482,13 +498,19 @@ Future<void> _playAudio() async {
               ? TextField(
                   controller: _pinyinController,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
+                  style: TextStyle(
+                    fontSize: UiScale.mediumFont,
+                    fontFamily: 'NotoSans',
+                  ),
                 )
               : SelectableText(
                   current?.pinyin ?? '',
                   strutStyle: _fixedStrut,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
+                  style: TextStyle(
+                    fontSize: UiScale.mediumFont,
+                    fontFamily: 'NotoSans',
+                  ),
                 )),
         SizedBox(height: 6),
         if (_editing || showTranslation)
@@ -496,13 +518,13 @@ Future<void> _playAudio() async {
               ? TextField(
                   controller: _meaningController,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(fontSize: UiScale.smallFont),
                 )
               : SelectableText(
                   current?.meaning ?? '',
                   strutStyle: _fixedStrut,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(fontSize: UiScale.smallFont),
                 )),
       ],
     );
@@ -532,7 +554,9 @@ Future<void> _playAudio() async {
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
-                border: Border.all(color: const Color.fromARGB(255, 36, 99, 121)),
+                border: Border.all(
+                  color: const Color.fromARGB(255, 36, 99, 121),
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: _editing
@@ -540,12 +564,12 @@ Future<void> _playAudio() async {
                       controller: _detailsController,
                       maxLines: null,
                       decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: UiScale.detailFont),
                     )
                   : SingleChildScrollView(
                       child: SelectableText(
                         current?.other ?? '',
-                        style: TextStyle(fontSize: 14),
+                        style: TextStyle(fontSize: UiScale.detailFont),
                       ),
                     ),
             ),
@@ -557,7 +581,9 @@ Future<void> _playAudio() async {
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
-                border: Border.all(color: const Color.fromARGB(255, 36, 99, 121)),
+                border: Border.all(
+                  color: const Color.fromARGB(255, 36, 99, 121),
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: _editing
@@ -565,12 +591,12 @@ Future<void> _playAudio() async {
                       controller: _rightController,
                       maxLines: null,
                       decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: UiScale.detailFont),
                     )
                   : SingleChildScrollView(
                       child: SelectableText(
                         current?.examples ?? '',
-                        style: TextStyle(fontSize: 14),
+                        style: TextStyle(fontSize: UiScale.detailFont),
                       ),
                     ),
             ),
@@ -597,8 +623,7 @@ Future<void> _playAudio() async {
                   Expanded(
                     child: TextField(
                       controller: _tagsController,
-                      decoration:
-                          const InputDecoration(labelText: 'Tags'),
+                      decoration: const InputDecoration(labelText: 'Tags'),
                     ),
                   ),
                   IconButton(
@@ -609,7 +634,10 @@ Future<void> _playAudio() async {
               )
             : SelectableText('Tags: ${current?.tags.join(', ')}'),
         const SizedBox(height: 8),
-        Text('Batch/ Group: $batchValue', style: TextStyle(fontSize: 16)),
+        Text(
+          'Batch/ Group: $batchValue',
+          style: TextStyle(fontSize: UiScale.smallFont),
+        ),
       ],
     );
 
@@ -625,22 +653,26 @@ Future<void> _playAudio() async {
                 children: [
                   ElevatedButton(
                     onPressed: _deleteCharacter,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
                     child: Text('DELETE CHARACTER'),
                   ),
                   SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _editCharacter,
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: _editing ? Colors.green : null),
+                      backgroundColor: _editing ? Colors.green : null,
+                    ),
                     child: Text(_editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
                   ),
                   if (_editing) ...[
                     SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _cancelEdit,
-                      style:
-                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
                       child: Text('CANCEL CHANGES'),
                     ),
                   ],
@@ -660,20 +692,26 @@ Future<void> _playAudio() async {
                 onPanStart: (details) {
                   setState(() => _points.add(details.localPosition));
                   _strokePoints = [];
-                  _strokePoints.add(mlkit.StrokePoint(
-                    x: details.localPosition.dx,
-                    y: details.localPosition.dy,
-                    t: DateTime.now().millisecondsSinceEpoch,
-                  ));
-                  _ink.strokes.add(mlkit.Stroke()..points = List.of(_strokePoints));
+                  _strokePoints.add(
+                    mlkit.StrokePoint(
+                      x: details.localPosition.dx,
+                      y: details.localPosition.dy,
+                      t: DateTime.now().millisecondsSinceEpoch,
+                    ),
+                  );
+                  _ink.strokes.add(
+                    mlkit.Stroke()..points = List.of(_strokePoints),
+                  );
                 },
                 onPanUpdate: (details) {
                   setState(() => _points.add(details.localPosition));
-                  _strokePoints.add(mlkit.StrokePoint(
-                    x: details.localPosition.dx,
-                    y: details.localPosition.dy,
-                    t: DateTime.now().millisecondsSinceEpoch,
-                  ));
+                  _strokePoints.add(
+                    mlkit.StrokePoint(
+                      x: details.localPosition.dx,
+                      y: details.localPosition.dy,
+                      t: DateTime.now().millisecondsSinceEpoch,
+                    ),
+                  );
                   if (_ink.strokes.isNotEmpty) {
                     _ink.strokes.last.points = List.of(_strokePoints);
                   }
@@ -711,9 +749,9 @@ Future<void> _playAudio() async {
                   !_modelReady
                       ? 'Recognized drawing: $_recognizerStatus'
                       : 'Recognized drawing: '
-                          '${_recognizedText.isEmpty ? _recognizerStatus : _recognizedText}'
-                          '${_recognizedScore != null ? ' (${(_recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
-                  style: const TextStyle(fontSize: 16),
+                            '${_recognizedText.isEmpty ? _recognizerStatus : _recognizedText}'
+                            '${_recognizedScore != null ? ' (${(_recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
+                  style: TextStyle(fontSize: UiScale.smallFont),
                 ),
               ],
             ),
@@ -733,7 +771,10 @@ Future<void> _playAudio() async {
             child: Text('DELETE'),
           ),
           SizedBox(width: 8),
-          ElevatedButton(onPressed: _goToPreviousCharacter, child: Text('PREVIOUS')),
+          ElevatedButton(
+            onPressed: _goToPreviousCharacter,
+            child: Text('PREVIOUS'),
+          ),
           SizedBox(width: 8),
           ElevatedButton(onPressed: _goToNextCharacter, child: Text('NEXT')),
         ],
@@ -749,9 +790,9 @@ Future<void> _playAudio() async {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(width: _toggleWidth, child: toggles),
+                SizedBox(width: UiScale.toggleWidth, child: toggles),
                 Expanded(child: Center(child: previewBox)),
-                SizedBox(width: _controlsWidth, child: controls),
+                SizedBox(width: UiScale.controlsWidth, child: controls),
               ],
             ),
             SizedBox(height: 24),
@@ -773,7 +814,6 @@ Future<void> _playAudio() async {
       style: TextStyle(fontSize: size),
     );
   }
-
 
   Widget _buildToggle(String label, bool value, ValueChanged<bool> onChanged) {
     return Row(

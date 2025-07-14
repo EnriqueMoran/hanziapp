@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
+import '../ui_scale.dart';
 import 'package:reorderables/reorderables.dart';
 
 class GroupEditScreen extends StatefulWidget {
@@ -70,12 +71,17 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
       await GroupApi.updateGroup(
         id,
         group.name,
-        _currentEntries.where((e) => e.selected).map((e) => e.character.id).toList(),
+        _currentEntries
+            .where((e) => e.selected)
+            .map((e) => e.character.id)
+            .toList(),
       );
       if (!mounted) return;
       final count = _currentEntries.where((e) => e.selected).length;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Group "${group.name}" saved with $count characters.')),
+        SnackBar(
+          content: Text('Group "${group.name}" saved with $count characters.'),
+        ),
       );
     }
   }
@@ -197,7 +203,7 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
           children: [
             Text(
               entry.character.character,
-              style: const TextStyle(fontSize: 24),
+              style: TextStyle(fontSize: UiScale.tileFont),
             ),
             if (selected)
               const Positioned(

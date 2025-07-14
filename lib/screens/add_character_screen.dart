@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
+import '../ui_scale.dart';
 
 class AddCharacterScreen extends StatefulWidget {
   const AddCharacterScreen({Key? key}) : super(key: key);
@@ -9,9 +10,6 @@ class AddCharacterScreen extends StatefulWidget {
 }
 
 class _AddCharacterScreenState extends State<AddCharacterScreen> {
-  static const double _toggleWidth = 200;
-  static const double _controlsWidth = 180;
-
   final _hanziController = TextEditingController();
   final _pinyinController = TextEditingController();
   final _meaningController = TextEditingController();
@@ -70,7 +68,9 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
     );
     if (tag != null) {
       final text = _tagsController.text;
-      final prefix = text.isNotEmpty && !text.trim().endsWith(',') ? '$text,' : text;
+      final prefix = text.isNotEmpty && !text.trim().endsWith(',')
+          ? '$text,'
+          : text;
       setState(() => _tagsController.text = '$prefix$tag,');
       _tagsController.selection = TextSelection.fromPosition(
         TextPosition(offset: _tagsController.text.length),
@@ -85,7 +85,8 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
         _levelController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please fill hanzi, pinyin, translation and level.')),
+          content: Text('Please fill hanzi, pinyin, translation and level.'),
+        ),
       );
       return;
     }
@@ -107,15 +108,14 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
       ),
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Character added.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Character added.')));
     _clearAll();
     CharacterApi.fetchTags().then((tags) {
       if (mounted) setState(() => _allTags = tags);
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -128,21 +128,24 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
           controller: _hanziController,
           textAlign: TextAlign.center,
           decoration: const InputDecoration(hintText: 'Hanzi'),
-          style: const TextStyle(fontSize: 48),
+          style: TextStyle(fontSize: UiScale.largeFont),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _pinyinController,
           textAlign: TextAlign.center,
           decoration: const InputDecoration(hintText: 'Pinyin'),
-          style: const TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
+          style: TextStyle(
+            fontSize: UiScale.mediumFont,
+            fontFamily: 'NotoSans',
+          ),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: _meaningController,
           textAlign: TextAlign.center,
           decoration: const InputDecoration(hintText: 'Translation'),
-          style: const TextStyle(fontSize: 16),
+          style: TextStyle(fontSize: UiScale.smallFont),
         ),
       ],
     );
@@ -157,8 +160,9 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
-                border:
-                    Border.all(color: const Color.fromARGB(255, 36, 99, 121)),
+                border: Border.all(
+                  color: const Color.fromARGB(255, 36, 99, 121),
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: TextField(
@@ -168,7 +172,7 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
                   border: InputBorder.none,
                   hintText: 'Notes',
                 ),
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: UiScale.detailFont),
               ),
             ),
           ),
@@ -178,8 +182,9 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
-                border:
-                    Border.all(color: const Color.fromARGB(255, 36, 99, 121)),
+                border: Border.all(
+                  color: const Color.fromARGB(255, 36, 99, 121),
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: TextField(
@@ -189,7 +194,7 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
                   border: InputBorder.none,
                   hintText: 'Examples',
                 ),
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: UiScale.detailFont),
               ),
             ),
           ),
@@ -237,10 +242,7 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: ElevatedButton(
-            onPressed: _save,
-            child: const Text('Save'),
-          ),
+          child: ElevatedButton(onPressed: _save, child: const Text('Save')),
         ),
       ],
     );
@@ -254,9 +256,9 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(width: _toggleWidth),
+                SizedBox(width: UiScale.toggleWidth),
                 Expanded(child: Center(child: previewBox)),
-                const SizedBox(width: _controlsWidth),
+                SizedBox(width: UiScale.controlsWidth),
               ],
             ),
             const SizedBox(height: 24),
@@ -271,4 +273,3 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
     );
   }
 }
-

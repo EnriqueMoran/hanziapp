@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
+import '../ui_scale.dart';
 import 'package:reorderables/reorderables.dart';
 
 class GroupCreationScreen extends StatefulWidget {
@@ -60,8 +61,9 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
           content: const Text('Please enter a group name.'),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK')),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
           ],
         ),
       );
@@ -76,7 +78,10 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text('Group "${_nameController.text}" saved${id != null ? ' (id $id)' : ''}.')),
+        content: Text(
+          'Group "${_nameController.text}" saved${id != null ? ' (id $id)' : ''}.',
+        ),
+      ),
     );
     _nameController.clear();
     _clearSelection();
@@ -96,10 +101,7 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Text(
-              c.character,
-              style: const TextStyle(fontSize: 24),
-            ),
+            Text(c.character, style: TextStyle(fontSize: UiScale.tileFont)),
             if (selected)
               const Positioned(
                 top: -4,
