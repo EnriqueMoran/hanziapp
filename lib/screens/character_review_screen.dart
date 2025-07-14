@@ -3,8 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
 import 'dart:async';
-import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
-    as mlkit;
+import 'dart:ui' as ui;
 
 class CharacterReviewScreen extends StatefulWidget {
   final List<Character>? initialCharacters;
@@ -49,17 +48,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   // Drawing points for handwriting panel
   List<Offset?> _points = [];
 
-  // Digital ink recognition
-  final mlkit.DigitalInkRecognizerModelManager _modelManager =
-      mlkit.DigitalInkRecognizerModelManager();
-  late final mlkit.DigitalInkRecognizer _inkRecognizer;
-  final mlkit.Ink _ink = mlkit.Ink();
-  List<mlkit.StrokePoint> _strokePoints = [];
+  // Recognition state
   String _recognizedText = '';
   double? _recognizedScore;
   Timer? _recognizeDebounce;
-  String _recognizerStatus = 'verificando modelo...';
-  bool _modelReady = false;
 
   // Audio player and flag for audio availability
   final AudioPlayer _player = AudioPlayer();
@@ -81,7 +73,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeRecognizer();
     _hanziController = TextEditingController();
     _pinyinController = TextEditingController();
     _meaningController = TextEditingController();
@@ -134,11 +125,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     super.dispose();
   }
 
-  /// Clears the drawing panel and ink data.
+  /// Clears the drawing panel and recognition state.
   void _clearDrawing() => setState(() {
         _points = [];
-        _ink.strokes.clear();
-        _strokePoints.clear();
         _recognizedText = '';
         _recognizedScore = null;
       });
@@ -205,47 +194,96 @@ Future<void> _playAudio() async {
   }
 }
 
-  Future<void> _initializeRecognizer() async {
-    setState(() => _recognizerStatus = 'verificando modelo...');
-    _inkRecognizer = mlkit.DigitalInkRecognizer(languageCode: 'zh-Hani');
-    try {
-      final downloaded = await _modelManager.isModelDownloaded('zh-Hani');
-      if (!downloaded) {
-        setState(() => _recognizerStatus = 'descargando modelo...');
-        await _modelManager.downloadModel('zh-Hani');
-      }
-      setState(() {
-        _recognizerStatus = 'modelo listo';
-        _modelReady = true;
-      });
-    } catch (e) {
-      setState(() => _recognizerStatus = 'error: ' + e.toString());
-    }
-  }
   void _queueRecognition() {
     _recognizeDebounce?.cancel();
     _recognizeDebounce =
-        Timer(const Duration(milliseconds: 300), _recognizeInk);
+        Timer(const Duration(milliseconds: 300), _recognizeDrawing);
   }
 
-  Future<void> _recognizeInk() async {
-    if (!_modelReady || _ink.strokes.isEmpty) return;
-    try {
-      final candidates = await _inkRecognizer.recognize(_ink);
-      if (candidates.isNotEmpty) {
-        final candidate = candidates.first;
-        final text = candidate.text.trim();
-        setState(() {
-          _recognizedText = text;
-          _recognizedScore = candidate.score;
-        });
-        if (text == current?.character) {
-          _goToNextCharacter();
-        }
-      }
-    } catch (e) {
-      debugPrint('Recognition error: $e');
+  Future<void> _recognizeDrawing() async {
+    if (_points.isEmpty || current == null) return;
+    final drawn = await _pointsToImage(_points, 64);
+    final target = await _characterToImage(current!.character, 64);
+    final similarity = await _imageSimilarity(drawn, target);
+    setState(() {
+      _recognizedText = current!.character;
+      _recognizedScore = similarity;
+    });
+    if (similarity > 0.8) {
+      _goToNextCharacter();
     }
+  }
+
+  Future<ui.Image> _pointsToImage(List<Offset?> points, int size) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final paint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    if (points.whereType<Offset>().isNotEmpty) {
+      final offsets = points.whereType<Offset>().toList();
+      var minX = offsets.first.dx,
+          minY = offsets.first.dy,
+          maxX = offsets.first.dx,
+          maxY = offsets.first.dy;
+      for (final p in offsets) {
+        if (p.dx < minX) minX = p.dx;
+        if (p.dy < minY) minY = p.dy;
+        if (p.dx > maxX) maxX = p.dx;
+        if (p.dy > maxY) maxY = p.dy;
+      }
+      final scaleX = (size - 4) / (maxX - minX + 1);
+      final scaleY = (size - 4) / (maxY - minY + 1);
+      Offset? prev;
+      for (final p in points) {
+        if (p == null) {
+          prev = null;
+          continue;
+        }
+        final px = (p.dx - minX) * scaleX + 2;
+        final py = (p.dy - minY) * scaleY + 2;
+        final cur = Offset(px, py);
+        if (prev != null) {
+          canvas.drawLine(prev, cur, paint);
+        }
+        prev = cur;
+      }
+    }
+    final picture = recorder.endRecording();
+    return picture.toImage(size, size);
+  }
+
+  Future<ui.Image> _characterToImage(String char, int size) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final painter = TextPainter(
+      text: TextSpan(
+        text: char,
+        style: TextStyle(fontSize: size.toDouble(), color: Colors.black),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final offset = Offset((size - painter.width) / 2, (size - painter.height) / 2);
+    painter.paint(canvas, offset);
+    final picture = recorder.endRecording();
+    return picture.toImage(size, size);
+  }
+
+  Future<double> _imageSimilarity(ui.Image a, ui.Image b) async {
+    final dataA = await a.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final dataB = await b.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (dataA == null || dataB == null) return 0.0;
+    final bytesA = dataA.buffer.asUint8List();
+    final bytesB = dataB.buffer.asUint8List();
+    double diff = 0;
+    for (int i = 0; i < bytesA.length; i += 4) {
+      final alphaA = bytesA[i + 3];
+      final alphaB = bytesB[i + 3];
+      diff += (alphaA - alphaB).abs();
+    }
+    diff /= (255.0 * (bytesA.length / 4));
+    return 1.0 - diff.clamp(0.0, 1.0);
   }
 
   /// Navigate to previous character and update audio flag.
@@ -408,8 +446,6 @@ Future<void> _playAudio() async {
     setState(() {
       currentIndex = 0;
       _points = [];
-      _ink.strokes.clear();
-      _strokePoints.clear();
     });
     _checkAudioAvailable();
     if (autoSound && _hasAudio) _playAudio();
@@ -657,29 +693,13 @@ Future<void> _playAudio() async {
               return GestureDetector(
                 onPanStart: (details) {
                   setState(() => _points.add(details.localPosition));
-                  _strokePoints = [];
-                  _strokePoints.add(mlkit.StrokePoint(
-                    x: details.localPosition.dx,
-                    y: details.localPosition.dy,
-                    t: DateTime.now().millisecondsSinceEpoch,
-                  ));
-                  _ink.strokes.add(mlkit.Stroke()..points = List.of(_strokePoints));
                 },
                 onPanUpdate: (details) {
                   setState(() => _points.add(details.localPosition));
-                  _strokePoints.add(mlkit.StrokePoint(
-                    x: details.localPosition.dx,
-                    y: details.localPosition.dy,
-                    t: DateTime.now().millisecondsSinceEpoch,
-                  ));
-                  if (_ink.strokes.isNotEmpty) {
-                    _ink.strokes.last.points = List.of(_strokePoints);
-                  }
                   _queueRecognition();
                 },
                 onPanEnd: (_) {
                   setState(() => _points.add(null));
-                  _strokePoints = [];
                   _queueRecognition();
                 },
                 child: Container(
@@ -706,11 +726,9 @@ Future<void> _playAudio() async {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  !_modelReady
-                      ? 'Recognized drawing: $_recognizerStatus'
-                      : 'Recognized drawing: '
-                          '${_recognizedText.isEmpty ? _recognizerStatus : _recognizedText}'
-                          '${_recognizedScore != null ? ' (${(_recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
+                  'Recognized drawing: '
+                  '${_recognizedText.isEmpty ? '...' : _recognizedText}'
+                  '${_recognizedScore != null ? ' (${(_recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
                   style: const TextStyle(fontSize: 16),
                 ),
               ],
