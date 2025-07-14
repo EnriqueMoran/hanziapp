@@ -442,8 +442,6 @@ Future<void> _playAudio() async {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ElevatedButton(onPressed: _restartReview, child: Text('RESTART')),
-        SizedBox(height: 8),
-        Text('Batch/ Group: $batchValue', style: TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
         ElevatedButton(
           onPressed: _hasAudio ? _playAudio : null,
@@ -540,6 +538,8 @@ Future<void> _playAudio() async {
                 ],
               )
             : SelectableText('Tags: ${current?.tags.join(', ')}'),
+        const SizedBox(height: 8),
+        Text('Batch/ Group: $batchValue', style: TextStyle(fontSize: 16)),
       ],
     );
 
