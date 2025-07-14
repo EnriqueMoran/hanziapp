@@ -92,6 +92,10 @@ def characters_route():
             data.get('examples', ''),
         ],
     )
+    for tag in (data.get('tags', '') or '').split(','):
+        tag = tag.strip()
+        if tag:
+            execute_db('INSERT OR IGNORE INTO tags (name) VALUES (?)', [tag])
     row = query_db('SELECT last_insert_rowid() AS id', one=True)
     return jsonify({'id': row['id']})
 
@@ -120,6 +124,10 @@ def update_character(char_id):
             char_id,
         ],
     )
+    for tag in (data.get('tags', '') or '').split(','):
+        tag = tag.strip()
+        if tag:
+            execute_db('INSERT OR IGNORE INTO tags (name) VALUES (?)', [tag])
     return jsonify({'status': 'ok'})
 
 
@@ -127,6 +135,12 @@ def update_character(char_id):
 def delete_character(char_id):
     execute_db('DELETE FROM characters WHERE id=?', [char_id])
     return jsonify({'status': 'ok'})
+
+
+@app.route('/tags')
+def tags():
+    rows = query_db('SELECT name FROM tags')
+    return jsonify([r['name'] for r in rows])
 
 
 

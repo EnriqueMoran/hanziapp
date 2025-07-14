@@ -97,4 +97,13 @@ class CharacterApi {
     }
     return null;
   }
+
+  static Future<List<String>> fetchTags() async {
+    final response = await http.get(Uri.parse('$baseUrl/tags'));
+    if (response.statusCode == 200) {
+      final List list = json.decode(response.body);
+      return list.cast<String>();
+    }
+    return [];
+  }
 }

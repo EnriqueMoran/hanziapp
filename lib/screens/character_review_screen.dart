@@ -34,6 +34,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   late final TextEditingController _meaningController;
   late final TextEditingController _detailsController;
   late final TextEditingController _rightController;
+  late final TextEditingController _levelController;
+  late final TextEditingController _tagsController;
+  List<String> _allTags = [];
 
   // State for batch label, character list and index
   String batchValue = 'None';
@@ -68,6 +71,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     _meaningController = TextEditingController();
     _detailsController = TextEditingController();
     _rightController = TextEditingController();
+    _levelController = TextEditingController();
+    _tagsController = TextEditingController();
+    CharacterApi.fetchTags().then((tags) {
+      if (mounted) setState(() => _allTags = tags);
+    });
 
     if (widget.initialCharacters != null) {
       characters = List.of(widget.initialCharacters!);
@@ -103,11 +111,38 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     _meaningController.dispose();
     _detailsController.dispose();
     _rightController.dispose();
+    _levelController.dispose();
+    _tagsController.dispose();
     super.dispose();
   }
 
   /// Clears the drawing panel.
   void _clearDrawing() => setState(() => _points = []);
+
+  Future<void> _chooseTag() async {
+    if (_allTags.isEmpty) return;
+    final tag = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Select Tag'),
+        children: [
+          for (final t in _allTags)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, t),
+              child: Text(t),
+            ),
+        ],
+      ),
+    );
+    if (tag != null) {
+      final text = _tagsController.text;
+      final prefix = text.isNotEmpty && !text.trim().endsWith(',') ? '$text,' : text;
+      setState(() => _tagsController.text = '$prefix$tag,');
+      _tagsController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _tagsController.text.length),
+      );
+    }
+  }
 
   /// Checks audio availability by trying to set the audio URL.
 Future<void> _checkAudioAvailable() async {
@@ -198,6 +233,8 @@ Future<void> _playAudio() async {
         _meaningController.text = current?.meaning ?? '';
         _detailsController.text = current?.other ?? '';
         _rightController.text = current?.examples ?? '';
+        _levelController.text = current?.level ?? '';
+        _tagsController.text = current?.tags.join(',');
       });
     } else {
       // Save changes
@@ -208,12 +245,19 @@ Future<void> _playAudio() async {
           character: _hanziController.text,
           pinyin: _pinyinController.text,
           meaning: _meaningController.text,
-          level: current!.level,
-          tags: current!.tags,
+          level: _levelController.text,
+          tags: _tagsController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList(),
           other: _detailsController.text,
           examples: _rightController.text,
         );
         CharacterApi.updateCharacter(characters[currentIndex]);
+        CharacterApi.fetchTags().then((tags) {
+          if (mounted) setState(() => _allTags = tags);
+        });
         _updateLastCharacter(current!.id);
         _editing = false;
         _checkAudioAvailable();
@@ -229,6 +273,8 @@ Future<void> _playAudio() async {
       _meaningController.text = current?.meaning ?? '';
       _detailsController.text = current?.other ?? '';
       _rightController.text = current?.examples ?? '';
+      _levelController.text = current?.level ?? '';
+      _tagsController.text = current?.tags.join(',');
     });
   }
 
@@ -452,9 +498,30 @@ Future<void> _playAudio() async {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        SelectableText('Level: ${current?.level ?? ''}'),
-        SizedBox(height: 4),
-        SelectableText('Tags: ${current?.tags.join(', ')}'),
+        _editing
+            ? TextField(
+                controller: _levelController,
+                decoration: const InputDecoration(labelText: 'Level'),
+              )
+            : SelectableText('Level: ${current?.level ?? ''}'),
+        const SizedBox(height: 4),
+        _editing
+            ? Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _tagsController,
+                      decoration:
+                          const InputDecoration(labelText: 'Tags'),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.list),
+                    onPressed: _chooseTag,
+                  ),
+                ],
+              )
+            : SelectableText('Tags: ${current?.tags.join(', ')}'),
       ],
     );
 

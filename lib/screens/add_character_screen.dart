@@ -19,6 +19,15 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
   final _examplesController = TextEditingController();
   final _levelController = TextEditingController();
   final _tagsController = TextEditingController();
+  List<String> _allTags = [];
+
+  @override
+  void initState() {
+    super.initState();
+    CharacterApi.fetchTags().then((tags) {
+      if (mounted) setState(() => _allTags = tags);
+    });
+  }
 
   @override
   void dispose() {
@@ -42,6 +51,31 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
       _levelController.clear();
       _tagsController.clear();
     });
+  }
+
+  Future<void> _chooseTag() async {
+    if (_allTags.isEmpty) return;
+    final tag = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Select Tag'),
+        children: [
+          for (final t in _allTags)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, t),
+              child: Text(t),
+            ),
+        ],
+      ),
+    );
+    if (tag != null) {
+      final text = _tagsController.text;
+      final prefix = text.isNotEmpty && !text.trim().endsWith(',') ? '$text,' : text;
+      setState(() => _tagsController.text = '$prefix$tag,');
+      _tagsController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _tagsController.text.length),
+      );
+    }
   }
 
   Future<void> _save() async {
@@ -157,7 +191,13 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: _tagsController,
-          decoration: const InputDecoration(labelText: 'Tags (comma separated)'),
+          decoration: InputDecoration(
+            labelText: 'Tags (comma separated)',
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.list),
+              onPressed: _chooseTag,
+            ),
+          ),
         ),
       ],
     );
