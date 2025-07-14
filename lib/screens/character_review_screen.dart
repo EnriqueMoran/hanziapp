@@ -4,6 +4,7 @@ import '../api/character_api.dart';
 import '../api/settings_api.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
+import '../recognition/hanzi_lookup_recognizer.dart';
 
 class CharacterReviewScreen extends StatefulWidget {
   final List<Character>? initialCharacters;
@@ -47,6 +48,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   // Drawing points for handwriting panel
   List<Offset?> _points = [];
+
+  // HanziLookup recognizer
+  final HanziLookupRecognizer _recognizer = HanziLookupRecognizer();
 
   // Recognition state
   String _recognizedText = '';
@@ -202,88 +206,65 @@ Future<void> _playAudio() async {
 
   Future<void> _recognizeDrawing() async {
     if (_points.isEmpty || current == null) return;
-    final drawn = await _pointsToImage(_points, 64);
-    final target = await _characterToImage(current!.character, 64);
-    final similarity = await _imageSimilarity(drawn, target);
+    final strokes = _pointsToStrokes(_points);
+    final chars = current!.character.split('');
+    final segments = _splitStrokes(strokes, chars.length);
+    String recognized = '';
+    double minScore = 1.0;
+    for (var i = 0; i < segments.length; i++) {
+      final matches = await _recognizer.recognize(segments[i]);
+      if (matches.isEmpty) continue;
+      recognized += matches.first['character'] ?? '';
+      final score = (matches.first['score']?.toDouble() ?? 0);
+      if (score < minScore) minScore = score;
+    }
     setState(() {
-      _recognizedText = current!.character;
-      _recognizedScore = similarity;
+      _recognizedText = recognized;
+      _recognizedScore = minScore;
     });
-    if (similarity > 0.8) {
+    if (recognized == current!.character && minScore > 0) {
       _goToNextCharacter();
     }
   }
 
-  Future<ui.Image> _pointsToImage(List<Offset?> points, int size) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    if (points.whereType<Offset>().isNotEmpty) {
-      final offsets = points.whereType<Offset>().toList();
-      var minX = offsets.first.dx,
-          minY = offsets.first.dy,
-          maxX = offsets.first.dx,
-          maxY = offsets.first.dy;
-      for (final p in offsets) {
-        if (p.dx < minX) minX = p.dx;
-        if (p.dy < minY) minY = p.dy;
-        if (p.dx > maxX) maxX = p.dx;
-        if (p.dy > maxY) maxY = p.dy;
-      }
-      final scaleX = (size - 4) / (maxX - minX + 1);
-      final scaleY = (size - 4) / (maxY - minY + 1);
-      Offset? prev;
-      for (final p in points) {
-        if (p == null) {
-          prev = null;
-          continue;
+  List<List<List<double>>> _pointsToStrokes(List<Offset?> points) {
+    final strokes = <List<List<double>>>[];
+    var currentStroke = <List<double>>[];
+    for (final p in points) {
+      if (p == null) {
+        if (currentStroke.isNotEmpty) {
+          strokes.add(currentStroke);
+          currentStroke = <List<double>>[];
         }
-        final px = (p.dx - minX) * scaleX + 2;
-        final py = (p.dy - minY) * scaleY + 2;
-        final cur = Offset(px, py);
-        if (prev != null) {
-          canvas.drawLine(prev, cur, paint);
-        }
-        prev = cur;
+      } else {
+        currentStroke.add([p.dx, p.dy]);
       }
     }
-    final picture = recorder.endRecording();
-    return picture.toImage(size, size);
+    if (currentStroke.isNotEmpty) strokes.add(currentStroke);
+    return strokes;
   }
 
-  Future<ui.Image> _characterToImage(String char, int size) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final painter = TextPainter(
-      text: TextSpan(
-        text: char,
-        style: TextStyle(fontSize: size.toDouble(), color: Colors.black),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final offset = Offset((size - painter.width) / 2, (size - painter.height) / 2);
-    painter.paint(canvas, offset);
-    final picture = recorder.endRecording();
-    return picture.toImage(size, size);
-  }
-
-  Future<double> _imageSimilarity(ui.Image a, ui.Image b) async {
-    final dataA = await a.toByteData(format: ui.ImageByteFormat.rawRgba);
-    final dataB = await b.toByteData(format: ui.ImageByteFormat.rawRgba);
-    if (dataA == null || dataB == null) return 0.0;
-    final bytesA = dataA.buffer.asUint8List();
-    final bytesB = dataB.buffer.asUint8List();
-    double diff = 0;
-    for (int i = 0; i < bytesA.length; i += 4) {
-      final alphaA = bytesA[i + 3];
-      final alphaB = bytesB[i + 3];
-      diff += (alphaA - alphaB).abs();
+  List<List<List<List<double>>>> _splitStrokes(
+      List<List<List<double>>> strokes, int count) {
+    if (count <= 1) return [strokes];
+    double minX = double.infinity, maxX = -double.infinity;
+    for (final stroke in strokes) {
+      for (final pt in stroke) {
+        final x = pt[0];
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+      }
     }
-    diff /= (255.0 * (bytesA.length / 4));
-    return 1.0 - diff.clamp(0.0, 1.0);
+    final width = maxX - minX + 1e-5;
+    final res = List.generate(count, (_) => <List<List<double>>>[]);
+    for (final stroke in strokes) {
+      double avgX = 0;
+      for (final pt in stroke) avgX += pt[0];
+      avgX /= stroke.length;
+      int idx = ((avgX - minX) / width * count).clamp(0, count - 1).floor();
+      res[idx].add(stroke);
+    }
+    return res;
   }
 
   /// Navigate to previous character and update audio flag.
