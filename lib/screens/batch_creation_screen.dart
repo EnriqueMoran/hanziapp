@@ -41,7 +41,9 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
   void _setFromPercent(int percent) {
     if (_total == 0) return;
     final size = max(1, (_total * percent / 100).floor());
-    _sizeController.text = size.toString();
+    setState(() {
+      _sizeController.text = size.toString();
+    });
   }
 
   void _createBatches() async {
