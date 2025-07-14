@@ -76,4 +76,25 @@ class CharacterApi {
   static Future<void> deleteCharacter(int id) async {
     await http.delete(Uri.parse('$baseUrl/characters/$id'));
   }
+
+  static Future<int?> createCharacter(Character c) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/characters'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'character': c.character,
+        'pinyin': c.pinyin,
+        'meaning': c.meaning,
+        'level': c.level,
+        'tags': c.tags.join(','),
+        'other': c.other,
+        'examples': c.examples,
+      }),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['id'] as int?;
+    }
+    return null;
+  }
 }

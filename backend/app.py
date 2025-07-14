@@ -74,10 +74,26 @@ def groups():
         return jsonify({'status': 'ok'})
 
 
-@app.route('/characters')
-def list_characters():
-    rows = query_db('SELECT * FROM characters')
-    return jsonify(rows)
+@app.route('/characters', methods=['GET', 'POST'])
+def characters_route():
+    if request.method == 'GET':
+        rows = query_db('SELECT * FROM characters')
+        return jsonify(rows)
+    data = request.get_json() or {}
+    execute_db(
+        'INSERT INTO characters (character, pinyin, meaning, level, tags, other, examples) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+            data.get('character', ''),
+            data.get('pinyin', ''),
+            data.get('meaning', ''),
+            data.get('level', ''),
+            data.get('tags', ''),
+            data.get('other', ''),
+            data.get('examples', ''),
+        ],
+    )
+    row = query_db('SELECT last_insert_rowid() AS id', one=True)
+    return jsonify({'id': row['id']})
 
 
 @app.route('/characters/<char>')
