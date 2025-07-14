@@ -58,6 +58,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   String _recognizedText = '';
   double? _recognizedScore;
   Timer? _recognizeDebounce;
+  String _recognizerStatus = 'verificando modelo...';
+  bool _modelReady = false;
 
   // Audio player and flag for audio availability
   final AudioPlayer _player = AudioPlayer();
@@ -204,13 +206,22 @@ Future<void> _playAudio() async {
 }
 
   Future<void> _initializeRecognizer() async {
+    setState(() => _recognizerStatus = 'verificando modelo...');
     _inkRecognizer = mlkit.DigitalInkRecognizer(languageCode: 'zh-Hani');
-    final downloaded = await _modelManager.isModelDownloaded('zh-Hani');
-    if (!downloaded) {
-      await _modelManager.downloadModel('zh-Hani');
+    try {
+      final downloaded = await _modelManager.isModelDownloaded('zh-Hani');
+      if (!downloaded) {
+        setState(() => _recognizerStatus = 'descargando modelo...');
+        await _modelManager.downloadModel('zh-Hani');
+      }
+      setState(() {
+        _recognizerStatus = 'modelo listo';
+        _modelReady = true;
+      });
+    } catch (e) {
+      setState(() => _recognizerStatus = 'error: ' + e.toString());
     }
   }
-
   void _queueRecognition() {
     _recognizeDebounce?.cancel();
     _recognizeDebounce =
@@ -218,7 +229,7 @@ Future<void> _playAudio() async {
   }
 
   Future<void> _recognizeInk() async {
-    if (_ink.strokes.isEmpty) return;
+    if (!_modelReady || _ink.strokes.isEmpty) return;
     try {
       final candidates = await _inkRecognizer.recognize(_ink);
       if (candidates.isNotEmpty) {
@@ -695,9 +706,11 @@ Future<void> _playAudio() async {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Recognized drawing: '
-                  '${_recognizedText.isEmpty ? '' : _recognizedText}'
-                  '${_recognizedScore != null ? ' (${(_recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
+                  !_modelReady
+                      ? 'Recognized drawing: $_recognizerStatus'
+                      : 'Recognized drawing: '
+                          '${_recognizedText.isEmpty ? _recognizerStatus : _recognizedText}'
+                          '${_recognizedScore != null ? ' (${(_recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
                   style: const TextStyle(fontSize: 16),
                 ),
               ],
