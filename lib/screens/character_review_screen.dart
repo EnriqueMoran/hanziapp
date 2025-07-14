@@ -103,6 +103,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     try {
       final res = await http.head(Uri.parse(url));
       if (res.statusCode == 200) {
+        await _player.stop();
         await _player.play(url);
       }
     } catch (_) {}
