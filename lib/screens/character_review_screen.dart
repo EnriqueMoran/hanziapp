@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
-import '../ui_scale.dart';
 import 'dart:async';
 import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
     as mlkit;
@@ -69,7 +69,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   Character? get current =>
       characters.isEmpty ? null : characters[currentIndex];
 
+  bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
+
   static const double _drawingHeightRatio = 0.25;
+  static const double _drawingHeightRatioAndroid = 0.20;
+  static const double _exampleHeightRatioAndroid = 0.22;
+  static const double _toggleWidth = 200;
+  static const double _controlsWidth = 180;
 
   // Prevent accents from changing line height
   static const StrutStyle _fixedStrut = StrutStyle(
@@ -135,12 +141,12 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   /// Clears the drawing panel and ink data.
   void _clearDrawing() => setState(() {
-    _points = [];
-    _ink.strokes.clear();
-    _strokePoints.clear();
-    _recognizedText = '';
-    _recognizedScore = null;
-  });
+        _points = [];
+        _ink.strokes.clear();
+        _strokePoints.clear();
+        _recognizedText = '';
+        _recognizedScore = null;
+      });
 
   Future<void> _chooseTag() async {
     if (_allTags.isEmpty) return;
@@ -159,9 +165,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     );
     if (tag != null) {
       final text = _tagsController.text;
-      final prefix = text.isNotEmpty && !text.trim().endsWith(',')
-          ? '$text,'
-          : text;
+      final prefix =
+          text.isNotEmpty && !text.trim().endsWith(',') ? '$text,' : text;
       setState(() => _tagsController.text = '$prefix$tag,');
       _tagsController.selection = TextSelection.fromPosition(
         TextPosition(offset: _tagsController.text.length),
@@ -432,7 +437,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final panelWidth = screenWidth / 3;
-    final panelHeight = screenHeight * _drawingHeightRatio;
+    final panelHeight = screenHeight *
+        (_isAndroid ? _drawingHeightRatioAndroid : _drawingHeightRatio);
+    final exampleHeight =
+        _isAndroid ? screenHeight * _exampleHeightRatioAndroid : null;
 
     // 1) Toggle switches
     final toggles = Column(
@@ -467,13 +475,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildNeighbor(getCharacterAt(-2), UiScale.smallFont),
+            _buildNeighbor(getCharacterAt(-2), 16),
             SizedBox(width: 12),
-            _buildNeighbor(getCharacterAt(-1), UiScale.mediumFont),
+            _buildNeighbor(getCharacterAt(-1), 24),
             SizedBox(width: 24),
-            _buildNeighbor(getCharacterAt(1), UiScale.mediumFont),
+            _buildNeighbor(getCharacterAt(1), 24),
             SizedBox(width: 12),
-            _buildNeighbor(getCharacterAt(2), UiScale.smallFont),
+            _buildNeighbor(getCharacterAt(2), 16),
           ],
         ),
         SizedBox(height: 12),
@@ -481,7 +489,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           TextField(
             controller: _hanziController,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: UiScale.largeFont),
+            style: TextStyle(fontSize: 48),
           )
         else
           FittedBox(
@@ -489,7 +497,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
             child: SelectableText(
               showHanzi ? (current?.character ?? '') : '',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: UiScale.largeFont),
+              style: TextStyle(fontSize: 48),
             ),
           ),
         SizedBox(height: 8),
@@ -498,19 +506,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               ? TextField(
                   controller: _pinyinController,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: UiScale.mediumFont,
-                    fontFamily: 'NotoSans',
-                  ),
+                  style: TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
                 )
               : SelectableText(
                   current?.pinyin ?? '',
                   strutStyle: _fixedStrut,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: UiScale.mediumFont,
-                    fontFamily: 'NotoSans',
-                  ),
+                  style: TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
                 )),
         SizedBox(height: 6),
         if (_editing || showTranslation)
@@ -518,13 +520,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               ? TextField(
                   controller: _meaningController,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: UiScale.smallFont),
+                  style: TextStyle(fontSize: 16),
                 )
               : SelectableText(
                   current?.meaning ?? '',
                   strutStyle: _fixedStrut,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: UiScale.smallFont),
+                  style: TextStyle(fontSize: 16),
                 )),
       ],
     );
@@ -533,82 +535,78 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final controls = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ElevatedButton(
-          onPressed: _restartReview,
-          style: UiScale.buttonStyle(),
-          child: Text('RESTART'),
-        ),
+        ElevatedButton(onPressed: _restartReview, child: Text('RESTART')),
         const SizedBox(height: 8),
         ElevatedButton(
           onPressed: _hasAudio ? _playAudio : null,
-          style: UiScale.buttonStyle(),
           child: const Text('LISTEN'),
         ),
       ],
     );
 
     // 4) Example area
-    final exampleArea = Expanded(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Left box (details)
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: 4),
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
-                border: Border.all(
-                  color: const Color.fromARGB(255, 36, 99, 121),
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: _editing
-                  ? TextField(
-                      controller: _detailsController,
-                      maxLines: null,
-                      decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: UiScale.detailFont),
-                    )
-                  : SingleChildScrollView(
-                      child: SelectableText(
-                        current?.other ?? '',
-                        style: TextStyle(fontSize: UiScale.detailFont),
-                      ),
-                    ),
+    final exampleRow = Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Left box (details)
+        Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: 4),
+            padding: EdgeInsets.all(8),
+            constraints:
+                _isAndroid ? BoxConstraints(maxHeight: exampleHeight!) : null,
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
+              border: Border.all(color: const Color.fromARGB(255, 36, 99, 121)),
+              borderRadius: BorderRadius.circular(8),
             ),
-          ),
-          // Right box (examples)
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.only(left: 4),
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
-                border: Border.all(
-                  color: const Color.fromARGB(255, 36, 99, 121),
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: _editing
-                  ? TextField(
-                      controller: _rightController,
-                      maxLines: null,
-                      decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: UiScale.detailFont),
-                    )
-                  : SingleChildScrollView(
-                      child: SelectableText(
-                        current?.examples ?? '',
-                        style: TextStyle(fontSize: UiScale.detailFont),
-                      ),
+            child: _editing
+                ? TextField(
+                    controller: _detailsController,
+                    maxLines: _isAndroid ? 4 : null,
+                    decoration: InputDecoration(border: InputBorder.none),
+                    style: TextStyle(fontSize: 14),
+                  )
+                : SingleChildScrollView(
+                    child: SelectableText(
+                      current?.other ?? '',
+                      style: TextStyle(fontSize: 14),
                     ),
-            ),
+                  ),
           ),
-        ],
-      ),
+        ),
+        // Right box (examples)
+        Expanded(
+          child: Container(
+            margin: EdgeInsets.only(left: 4),
+            padding: EdgeInsets.all(8),
+            constraints:
+                _isAndroid ? BoxConstraints(maxHeight: exampleHeight!) : null,
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
+              border: Border.all(color: const Color.fromARGB(255, 36, 99, 121)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: _editing
+                ? TextField(
+                    controller: _rightController,
+                    maxLines: _isAndroid ? 4 : null,
+                    decoration: InputDecoration(border: InputBorder.none),
+                    style: TextStyle(fontSize: 14),
+                  )
+                : SingleChildScrollView(
+                    child: SelectableText(
+                      current?.examples ?? '',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ),
+          ),
+        ),
+      ],
     );
+    final exampleArea = _isAndroid
+        ? SizedBox(height: exampleHeight, child: exampleRow)
+        : Expanded(child: exampleRow);
 
     // 5) Level & tags
     final levelTags = Column(
@@ -639,127 +637,135 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               )
             : SelectableText('Tags: ${current?.tags.join(', ')}'),
         const SizedBox(height: 8),
-        Text(
-          'Batch/ Group: $batchValue',
-          style: TextStyle(fontSize: UiScale.smallFont),
-        ),
+        Text('Batch/ Group: $batchValue', style: TextStyle(fontSize: 16)),
       ],
     );
 
     // 6) Drawing section
-    final drawingSection = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final buttonsRow = Row(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: _deleteCharacter,
-                    style: UiScale.buttonStyle(backgroundColor: Colors.red),
-                    child: Text('DELETE CHARACTER'),
-                  ),
-                  SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _editCharacter,
-                    style: UiScale.buttonStyle(
-                      backgroundColor: _editing ? Colors.green : null,
-                    ),
-                    child: Text(_editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
-                  ),
-                  if (_editing) ...[
-                    SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: _cancelEdit,
-                      style: UiScale.buttonStyle(backgroundColor: Colors.red),
-                      child: Text('CANCEL CHANGES'),
-                    ),
-                  ],
-                ],
-              ),
-              SizedBox(height: 16),
-              levelTags,
-            ],
-          ),
+        ElevatedButton(
+          onPressed: _deleteCharacter,
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: Text('DELETE CHARACTER'),
         ),
-        SizedBox(
-          width: panelWidth,
-          height: panelHeight,
-          child: LayoutBuilder(
-            builder: (ctx, cons) {
-              return GestureDetector(
-                onPanStart: (details) {
-                  setState(() => _points.add(details.localPosition));
-                  _strokePoints = [];
-                  _strokePoints.add(
-                    mlkit.StrokePoint(
-                      x: details.localPosition.dx,
-                      y: details.localPosition.dy,
-                      t: DateTime.now().millisecondsSinceEpoch,
-                    ),
-                  );
-                  _ink.strokes.add(
-                    mlkit.Stroke()..points = List.of(_strokePoints),
-                  );
-                },
-                onPanUpdate: (details) {
-                  setState(() => _points.add(details.localPosition));
-                  _strokePoints.add(
-                    mlkit.StrokePoint(
-                      x: details.localPosition.dx,
-                      y: details.localPosition.dy,
-                      t: DateTime.now().millisecondsSinceEpoch,
-                    ),
-                  );
-                  if (_ink.strokes.isNotEmpty) {
-                    _ink.strokes.last.points = List.of(_strokePoints);
-                  }
-                  _queueRecognition();
-                },
-                onPanEnd: (_) {
-                  setState(() => _points.add(null));
-                  _strokePoints = [];
-                  _queueRecognition();
-                },
-                child: Container(
-                  width: cons.maxWidth,
-                  height: cons.maxHeight,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    border: Border.all(color: Colors.white24),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: CustomPaint(
-                    painter: _DrawingPainter(points: _points),
-                    child: SizedBox.expand(),
-                  ),
-                ),
-              );
-            },
+        SizedBox(width: 8),
+        ElevatedButton(
+          onPressed: _editCharacter,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _editing ? Colors.green : null,
           ),
+          child: Text(_editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
         ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  !_modelReady
-                      ? 'Recognized drawing: $_recognizerStatus'
-                      : 'Recognized drawing: '
-                            '${_recognizedText.isEmpty ? _recognizerStatus : _recognizedText}'
-                            '${_recognizedScore != null ? ' (${(_recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
-                  style: TextStyle(fontSize: UiScale.smallFont),
-                ),
-              ],
-            ),
+        if (_editing) ...[
+          SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: _cancelEdit,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('CANCEL CHANGES'),
           ),
-        ),
+        ],
       ],
     );
+
+    final recognizedBox = Padding(
+      padding: const EdgeInsets.only(left: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            !_modelReady
+                ? 'Recognized drawing: $_recognizerStatus'
+                : 'Recognized drawing: '
+                    '${_recognizedText.isEmpty ? _recognizerStatus : _recognizedText}'
+                    '${_recognizedScore != null ? ' (${(_recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
+            style: const TextStyle(fontSize: 16),
+          ),
+        ],
+      ),
+    );
+
+    final drawingPanel = SizedBox(
+      width: panelWidth,
+      height: panelHeight,
+      child: LayoutBuilder(
+        builder: (ctx, cons) {
+          return GestureDetector(
+            onPanStart: (details) {
+              setState(() => _points.add(details.localPosition));
+              _strokePoints = [];
+              _strokePoints.add(
+                mlkit.StrokePoint(
+                  x: details.localPosition.dx,
+                  y: details.localPosition.dy,
+                  t: DateTime.now().millisecondsSinceEpoch,
+                ),
+              );
+              _ink.strokes.add(mlkit.Stroke()..points = List.of(_strokePoints));
+            },
+            onPanUpdate: (details) {
+              setState(() => _points.add(details.localPosition));
+              _strokePoints.add(
+                mlkit.StrokePoint(
+                  x: details.localPosition.dx,
+                  y: details.localPosition.dy,
+                  t: DateTime.now().millisecondsSinceEpoch,
+                ),
+              );
+              if (_ink.strokes.isNotEmpty) {
+                _ink.strokes.last.points = List.of(_strokePoints);
+              }
+              _queueRecognition();
+            },
+            onPanEnd: (_) {
+              setState(() => _points.add(null));
+              _strokePoints = [];
+              _queueRecognition();
+            },
+            child: Container(
+              width: cons.maxWidth,
+              height: cons.maxHeight,
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                border: Border.all(color: Colors.white24),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: CustomPaint(
+                painter: _DrawingPainter(points: _points),
+                child: SizedBox.expand(),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    final drawingSection = screenWidth < 650
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              buttonsRow,
+              SizedBox(height: 16),
+              levelTags,
+              SizedBox(height: 16),
+              drawingPanel,
+              SizedBox(height: 8),
+              recognizedBox,
+            ],
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [buttonsRow, SizedBox(height: 16), levelTags],
+                ),
+              ),
+              drawingPanel,
+              Expanded(child: recognizedBox),
+            ],
+          );
 
     // 7) Navigation buttons
     final navigation = Center(
@@ -768,21 +774,16 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         children: [
           ElevatedButton(
             onPressed: _clearDrawing,
-            style: UiScale.buttonStyle(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: Text('DELETE'),
           ),
           SizedBox(width: 8),
           ElevatedButton(
             onPressed: _goToPreviousCharacter,
-            style: UiScale.buttonStyle(),
             child: Text('PREVIOUS'),
           ),
           SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: _goToNextCharacter,
-            style: UiScale.buttonStyle(),
-            child: Text('NEXT'),
-          ),
+          ElevatedButton(onPressed: _goToNextCharacter, child: Text('NEXT')),
         ],
       ),
     );
@@ -796,9 +797,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(width: UiScale.toggleWidth, child: toggles),
+                SizedBox(width: _toggleWidth, child: toggles),
                 Expanded(child: Center(child: previewBox)),
-                SizedBox(width: UiScale.controlsWidth, child: controls),
+                SizedBox(width: _controlsWidth, child: controls),
               ],
             ),
             SizedBox(height: 24),

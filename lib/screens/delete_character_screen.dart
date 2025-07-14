@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
-import '../ui_scale.dart';
 
 class DeleteCharacterScreen extends StatefulWidget {
   const DeleteCharacterScreen({Key? key}) : super(key: key);
@@ -53,9 +52,7 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete characters?'),
-        content: Text(
-          'Are you sure you want to delete ${_selected.length} characters?',
-        ),
+        content: Text('Are you sure you want to delete ${_selected.length} characters?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -87,7 +84,10 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Text(c.character, style: TextStyle(fontSize: UiScale.tileFont)),
+            Text(
+              c.character,
+              style: const TextStyle(fontSize: 24),
+            ),
             if (selected)
               const Positioned(
                 top: -4,
@@ -123,7 +123,6 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    style: UiScale.buttonStyle(),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -131,7 +130,6 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _confirmDelete,
-                    style: UiScale.buttonStyle(backgroundColor: Colors.red),
                     child: const Text('Delete'),
                   ),
                 ),

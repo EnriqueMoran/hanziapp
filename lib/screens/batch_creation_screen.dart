@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../api/batch_api.dart';
-import '../ui_scale.dart';
 
 class BatchCreationScreen extends StatefulWidget {
   const BatchCreationScreen({Key? key}) : super(key: key);
@@ -81,13 +80,12 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
           children: [
             ElevatedButton(
               onPressed: () => _setFromPercent(p),
-              style: UiScale.buttonStyle(),
               child: Text('$p%'),
             ),
             const SizedBox(height: 4),
             Text('${(_total * p / 100).floor()}'),
           ],
-        ),
+        )
     ];
 
     return Scaffold(
@@ -127,7 +125,6 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    style: UiScale.buttonStyle(),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -135,7 +132,6 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _createBatches,
-                    style: UiScale.buttonStyle(),
                     child: const Text('Create'),
                   ),
                 ),
