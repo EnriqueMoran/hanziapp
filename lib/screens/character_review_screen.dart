@@ -23,20 +23,26 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool showPinyin = true;
   bool showTranslation = true;
   bool random = false;
-
   bool _editing = false;
+
+  // Text controllers for editing
   late final TextEditingController _hanziController;
   late final TextEditingController _pinyinController;
   late final TextEditingController _meaningController;
   late final TextEditingController _detailsController;
   late final TextEditingController _rightController;
 
+  // State for batch label, character list and index
   String batchValue = 'None';
   List<Character> characters = [];
   int currentIndex = 0;
+
+  // Drawing points for handwriting panel
   List<Offset?> _points = [];
 
+  // Audio player and flag for audio availability
   final AudioPlayer _player = AudioPlayer();
+  bool _hasAudio = false;
 
   Character? get current =>
       characters.isEmpty ? null : characters[currentIndex];
@@ -67,18 +73,19 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           : 'None';
       if (characters.isNotEmpty) {
         CharacterApi.updateLastReviewed(characters.first.id);
+        _checkAudioAvailable();
       }
     } else {
       // Fetch all characters on startup
       CharacterApi.fetchAll().then((list) {
-        if (mounted) {
-          setState(() {
-            characters = list;
-            currentIndex = 0;
-          });
-          if (list.isNotEmpty) {
-            CharacterApi.updateLastReviewed(list.first.id);
-          }
+        if (!mounted) return;
+        setState(() {
+          characters = list;
+          currentIndex = 0;
+        });
+        if (characters.isNotEmpty) {
+          CharacterApi.updateLastReviewed(characters.first.id);
+          _checkAudioAvailable();
         }
       });
     }
@@ -94,21 +101,47 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     super.dispose();
   }
 
+  /// Clears the drawing panel.
   void _clearDrawing() => setState(() => _points = []);
 
-  Future<void> _playAudio() async {
-    final char = current?.character;
-    if (char == null || char.isEmpty) return;
-    final url = 'https://data.dong-chinese.com/hsk-audio/' + char + '.mp3';
-    try {
-      final res = await http.head(Uri.parse(url));
-      if (res.statusCode == 200) {
-        await _player.stop();
-        await _player.play(url);
-      }
-    } catch (_) {}
+  /// Checks audio availability by trying to set the audio URL.
+Future<void> _checkAudioAvailable() async {
+  final char = current?.character;
+  if (char == null || char.isEmpty) {
+    setState(() => _hasAudio = false);
+    return;
   }
 
+  final encodedChar = Uri.encodeComponent(char);
+  final url = 'https://data.dong-chinese.com/hsk-audio/$encodedChar.mp3';
+
+  try {
+    await _player.stop();
+    await _player.setUrl(url);
+    setState(() => _hasAudio = true);
+  } catch (_) {
+    setState(() => _hasAudio = false);
+  }
+}
+
+/// Plays the character audio.
+Future<void> _playAudio() async {
+  final char = current?.character;
+  if (char == null || char.isEmpty) return;
+
+  final encodedChar = Uri.encodeComponent(char);
+  final url = 'https://data.dong-chinese.com/hsk-audio/$encodedChar.mp3';
+
+  try {
+    await _player.stop();
+    await _player.setUrl(url);
+    await _player.resume();
+  } catch (e) {
+    debugPrint('Error playing audio: $e');
+  }
+}
+
+  /// Navigate to previous character and update audio flag.
   void _goToPreviousCharacter() {
     if (currentIndex > 0) {
       setState(() {
@@ -116,10 +149,12 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         _clearDrawing();
       });
       CharacterApi.updateLastReviewed(current!.id);
-      if (autoSound) _playAudio();
+      _checkAudioAvailable();
+      if (autoSound && _hasAudio) _playAudio();
     }
   }
 
+  /// Navigate to next character and update audio flag.
   void _goToNextCharacter() {
     if (currentIndex < characters.length - 1) {
       setState(() {
@@ -127,29 +162,30 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         _clearDrawing();
       });
       CharacterApi.updateLastReviewed(current!.id);
-      if (autoSound) _playAudio();
+      _checkAudioAvailable();
+      if (autoSound && _hasAudio) _playAudio();
     }
   }
 
+  /// Delete the current character, update list and audio flag.
   void _deleteCharacter() {
-    if (current != null) {
-      CharacterApi.deleteCharacter(current!.id).then((_) {
-        setState(() {
-          characters.removeAt(currentIndex);
-          if (currentIndex >= characters.length) {
-            currentIndex = characters.isEmpty ? 0 : characters.length - 1;
-          }
-        });
-        if (characters.isNotEmpty) {
-          CharacterApi.updateLastReviewed(current!.id);
-        }
+    if (current == null) return;
+    CharacterApi.deleteCharacter(current!.id).then((_) {
+      setState(() {
+        characters.removeAt(currentIndex);
+        currentIndex = currentIndex.clamp(0, characters.length - 1);
       });
-    }
+      if (characters.isNotEmpty) {
+        CharacterApi.updateLastReviewed(current!.id);
+        _checkAudioAvailable();
+      }
+    });
   }
 
+  /// Toggle edit mode or save changes.
   void _editCharacter() {
     if (!_editing) {
-      // Enter editing mode: populate controllers
+      // Enter editing: populate controllers
       setState(() {
         _editing = true;
         _hanziController.text = current?.character ?? '';
@@ -160,28 +196,27 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       });
     } else {
       // Save changes
-      if (current != null) {
-        setState(() {
-          characters[currentIndex] = Character(
-            id: current!.id,
-            character: _hanziController.text,
-            pinyin: _pinyinController.text,
-            meaning: _meaningController.text,
-            level: current!.level,
-            tags: current!.tags,
-            other: _detailsController.text,
-            examples: _rightController.text,
-          );
-          CharacterApi.updateCharacter(characters[currentIndex]);
-          CharacterApi.updateLastReviewed(current!.id);
-          _editing = false;
-        });
-      }
+      if (current == null) return;
+      setState(() {
+        characters[currentIndex] = Character(
+          id: current!.id,
+          character: _hanziController.text,
+          pinyin: _pinyinController.text,
+          meaning: _meaningController.text,
+          level: current!.level,
+          tags: current!.tags,
+          other: _detailsController.text,
+          examples: _rightController.text,
+        );
+        CharacterApi.updateCharacter(characters[currentIndex]);
+        CharacterApi.updateLastReviewed(current!.id);
+        _editing = false;
+        _checkAudioAvailable();
+      });
     }
   }
 
   void _cancelEdit() {
-    // Cancel editing and revert controllers
     setState(() {
       _editing = false;
       _hanziController.text = current?.character ?? '';
@@ -209,26 +244,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final toggles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildToggle(
-          'Auto Sound',
-          autoSound,
-          (v) => setState(() => autoSound = v),
-        ),
-        _buildToggle(
-          'Show Hanzi',
-          showHanzi,
-          (v) => setState(() => showHanzi = v),
-        ),
-        _buildToggle(
-          'Show Pinyin',
-          showPinyin,
-          (v) => setState(() => showPinyin = v),
-        ),
-        _buildToggle(
-          'Show Translation',
-          showTranslation,
-          (v) => setState(() => showTranslation = v),
-        ),
+        _buildToggle('Auto Sound', autoSound, (v) => setState(() => autoSound = v)),
+        _buildToggle('Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
+        _buildToggle('Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
+        _buildToggle('Show Translation', showTranslation, (v) => setState(() => showTranslation = v)),
       ],
     );
 
@@ -295,7 +314,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       ],
     );
 
-    // 3) Controls
+    // 3) Controls with LISTEN enabled only if audio exists
     final controls = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -310,11 +329,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         SizedBox(height: 8),
         Text('Batch/ Group: $batchValue', style: TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
-        ElevatedButton(onPressed: _playAudio, child: const Text('LISTEN')),
+        ElevatedButton(
+          onPressed: _hasAudio ? _playAudio : null,
+          child: const Text('LISTEN'),
+        ),
       ],
     );
 
-    // 4) Example area: left and right boxes
+    // 4) Example area
     final exampleArea = Expanded(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -325,8 +347,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               margin: EdgeInsets.only(right: 4),
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.teal.withOpacity(0.1),
-                border: Border.all(color: Colors.teal),
+                color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
+                border: Border.all(color: const Color.fromARGB(255, 36, 99, 121)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: _editing
@@ -344,14 +366,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                     ),
             ),
           ),
-          // Right box (lorem ipsum)
+          // Right box (examples)
           Expanded(
             child: Container(
               margin: EdgeInsets.only(left: 4),
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.teal.withOpacity(0.1),
-                border: Border.all(color: Colors.teal),
+                color: const Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
+                border: Border.all(color: const Color.fromARGB(255, 36, 99, 121)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: _editing
@@ -384,7 +406,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       ],
     );
 
-    // 6) Drawing section with centered panel
+    // 6) Drawing section
     final drawingSection = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -396,26 +418,22 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 children: [
                   ElevatedButton(
                     onPressed: _deleteCharacter,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                     child: Text('DELETE CHARACTER'),
                   ),
                   SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _editCharacter,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _editing ? Colors.green : null,
-                    ),
+                        backgroundColor: _editing ? Colors.green : null),
                     child: Text(_editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
                   ),
                   if (_editing) ...[
                     SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _cancelEdit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
                       child: Text('CANCEL CHANGES'),
                     ),
                   ],
@@ -467,10 +485,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
             child: Text('DELETE'),
           ),
           SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: _goToPreviousCharacter,
-            child: Text('PREVIOUS'),
-          ),
+          ElevatedButton(onPressed: _goToPreviousCharacter, child: Text('PREVIOUS')),
           SizedBox(width: 8),
           ElevatedButton(onPressed: _goToNextCharacter, child: Text('NEXT')),
         ],
@@ -503,7 +518,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     );
   }
 
-  /// Builds a neighbor-character preview
   Widget _buildNeighbor(String char, double size) {
     return SelectableText(
       showHanzi ? char : '',
@@ -512,7 +526,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     );
   }
 
-  /// Builds a toggle row with label and switch
+
   Widget _buildToggle(String label, bool value, ValueChanged<bool> onChanged) {
     return Row(
       children: [
