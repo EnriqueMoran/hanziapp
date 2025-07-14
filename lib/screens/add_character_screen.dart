@@ -11,7 +11,6 @@ class AddCharacterScreen extends StatefulWidget {
 class _AddCharacterScreenState extends State<AddCharacterScreen> {
   static const double _toggleWidth = 200;
   static const double _controlsWidth = 180;
-  static const double _drawingHeightRatio = 0.25;
 
   final _hanziController = TextEditingController();
   final _pinyinController = TextEditingController();
@@ -20,8 +19,6 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
   final _examplesController = TextEditingController();
   final _levelController = TextEditingController();
   final _tagsController = TextEditingController();
-
-  List<Offset?> _points = [];
 
   @override
   void dispose() {
@@ -44,7 +41,6 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
       _examplesController.clear();
       _levelController.clear();
       _tagsController.clear();
-      _points = [];
     });
   }
 
@@ -70,15 +66,10 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
     Navigator.pop(context);
   }
 
-  void _drawUpdate(Offset pos) => setState(() => _points.add(pos));
-  void _drawEnd() => setState(() => _points.add(null));
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final panelWidth = screenWidth / 3;
-    final panelHeight = screenHeight * _drawingHeightRatio;
 
     final previewBox = Column(
       mainAxisSize: MainAxisSize.min,
@@ -86,18 +77,21 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
         TextField(
           controller: _hanziController,
           textAlign: TextAlign.center,
+          decoration: const InputDecoration(hintText: 'Hanzi'),
           style: const TextStyle(fontSize: 48),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _pinyinController,
           textAlign: TextAlign.center,
+          decoration: const InputDecoration(hintText: 'Pinyin'),
           style: const TextStyle(fontSize: 20, fontFamily: 'NotoSans'),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: _meaningController,
           textAlign: TextAlign.center,
+          decoration: const InputDecoration(hintText: 'Translation'),
           style: const TextStyle(fontSize: 16),
         ),
       ],
@@ -120,7 +114,10 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
               child: TextField(
                 controller: _detailsController,
                 maxLines: null,
-                decoration: const InputDecoration(border: InputBorder.none),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Notes',
+                ),
                 style: const TextStyle(fontSize: 14),
               ),
             ),
@@ -138,7 +135,10 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
               child: TextField(
                 controller: _examplesController,
                 maxLines: null,
-                decoration: const InputDecoration(border: InputBorder.none),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Examples',
+                ),
                 style: const TextStyle(fontSize: 14),
               ),
             ),
@@ -162,38 +162,7 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
       ],
     );
 
-    final drawingSection = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: levelTags),
-        SizedBox(
-          width: panelWidth,
-          height: panelHeight,
-          child: LayoutBuilder(
-            builder: (ctx, cons) {
-              return GestureDetector(
-                onPanUpdate: (d) => _drawUpdate(d.localPosition),
-                onPanEnd: (_) => _drawEnd(),
-                child: Container(
-                  width: cons.maxWidth,
-                  height: cons.maxHeight,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    border: Border.all(color: Colors.white24),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: CustomPaint(
-                    painter: _DrawingPainter(points: _points),
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const Expanded(child: SizedBox()),
-      ],
-    );
+    final formSection = levelTags;
 
     final buttons = Row(
       children: [
@@ -237,7 +206,7 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
             const SizedBox(height: 24),
             exampleArea,
             const SizedBox(height: 24),
-            drawingSection,
+            formSection,
             const SizedBox(height: 12),
             buttons,
           ],
@@ -247,24 +216,3 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
   }
 }
 
-class _DrawingPainter extends CustomPainter {
-  final List<Offset?> points;
-  const _DrawingPainter({required this.points});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    for (var i = 0; i < points.length - 1; i++) {
-      final p1 = points[i], p2 = points[i + 1];
-      if (p1 != null && p2 != null) {
-        canvas.drawLine(p1, p2, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
