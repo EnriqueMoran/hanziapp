@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
+import 'dart:async';
 import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
     as mlkit;
 
@@ -54,6 +55,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   late final mlkit.DigitalInkRecognizer _inkRecognizer;
   final mlkit.Ink _ink = mlkit.Ink();
   List<mlkit.StrokePoint> _strokePoints = [];
+  String _recognizedText = '';
+  double? _recognizedScore;
+  Timer? _recognizeDebounce;
 
   // Audio player and flag for audio availability
   final AudioPlayer _player = AudioPlayer();
@@ -124,6 +128,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     _rightController.dispose();
     _levelController.dispose();
     _tagsController.dispose();
+    _recognizeDebounce?.cancel();
     super.dispose();
   }
 
@@ -132,6 +137,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         _points = [];
         _ink.strokes.clear();
         _strokePoints.clear();
+        _recognizedText = '';
+        _recognizedScore = null;
       });
 
   Future<void> _chooseTag() async {
@@ -204,12 +211,23 @@ Future<void> _playAudio() async {
     }
   }
 
+  void _queueRecognition() {
+    _recognizeDebounce?.cancel();
+    _recognizeDebounce =
+        Timer(const Duration(milliseconds: 300), _recognizeInk);
+  }
+
   Future<void> _recognizeInk() async {
     if (_ink.strokes.isEmpty) return;
     try {
       final candidates = await _inkRecognizer.recognize(_ink);
       if (candidates.isNotEmpty) {
-        final text = candidates.first.text.trim();
+        final candidate = candidates.first;
+        final text = candidate.text.trim();
+        setState(() {
+          _recognizedText = text;
+          _recognizedScore = candidate.score;
+        });
         if (text == current?.character) {
           _goToNextCharacter();
         }
@@ -646,11 +664,12 @@ Future<void> _playAudio() async {
                   if (_ink.strokes.isNotEmpty) {
                     _ink.strokes.last.points = List.of(_strokePoints);
                   }
+                  _queueRecognition();
                 },
                 onPanEnd: (_) {
                   setState(() => _points.add(null));
                   _strokePoints = [];
-                  _recognizeInk();
+                  _queueRecognition();
                 },
                 child: Container(
                   width: cons.maxWidth,
@@ -669,7 +688,22 @@ Future<void> _playAudio() async {
             },
           ),
         ),
-        Expanded(child: SizedBox()),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Recognized drawing: '
+                  '${_recognizedText.isEmpty ? '' : _recognizedText}'
+                  '${_recognizedScore != null ? ' (${(_recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
 
