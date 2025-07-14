@@ -13,6 +13,7 @@ dependencies:
   http: ^0.13.0
   reorderables: ^0.6.0
   audioplayers: ^0.20.1
+  google_mlkit_digital_ink_recognition: ^0.14.1
 
 dev_dependencies:
   flutter_test:

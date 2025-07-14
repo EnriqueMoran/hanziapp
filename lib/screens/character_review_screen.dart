@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
+import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
+    as mlkit;
 
 class CharacterReviewScreen extends StatefulWidget {
   final List<Character>? initialCharacters;
@@ -46,6 +48,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   // Drawing points for handwriting panel
   List<Offset?> _points = [];
 
+  // Digital ink recognition
+  final mlkit.DigitalInkRecognizerModelManager _modelManager =
+      mlkit.DigitalInkRecognizerModelManager();
+  late final mlkit.DigitalInkRecognizer _inkRecognizer;
+  final mlkit.Ink _ink = mlkit.Ink();
+  List<mlkit.StrokePoint> _strokePoints = [];
+
   // Audio player and flag for audio availability
   final AudioPlayer _player = AudioPlayer();
   bool _hasAudio = false;
@@ -66,6 +75,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeRecognizer();
     _hanziController = TextEditingController();
     _pinyinController = TextEditingController();
     _meaningController = TextEditingController();
@@ -117,8 +127,12 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     super.dispose();
   }
 
-  /// Clears the drawing panel.
-  void _clearDrawing() => setState(() => _points = []);
+  /// Clears the drawing panel and ink data.
+  void _clearDrawing() => setState(() {
+        _points = [];
+        _ink.strokes.clear();
+        _strokePoints.clear();
+      });
 
   Future<void> _chooseTag() async {
     if (_allTags.isEmpty) return;
@@ -181,6 +195,29 @@ Future<void> _playAudio() async {
     debugPrint('Error playing audio: $e');
   }
 }
+
+  Future<void> _initializeRecognizer() async {
+    _inkRecognizer = mlkit.DigitalInkRecognizer(languageCode: 'zh-Hani');
+    final downloaded = await _modelManager.isModelDownloaded('zh-Hani');
+    if (!downloaded) {
+      await _modelManager.downloadModel('zh-Hani');
+    }
+  }
+
+  Future<void> _recognizeInk() async {
+    if (_ink.strokes.isEmpty) return;
+    try {
+      final candidates = await _inkRecognizer.recognize(_ink);
+      if (candidates.isNotEmpty) {
+        final text = candidates.first.text.trim();
+        if (text == current?.character) {
+          _goToNextCharacter();
+        }
+      }
+    } catch (e) {
+      debugPrint('Recognition error: $e');
+    }
+  }
 
   /// Navigate to previous character and update audio flag.
   void _goToPreviousCharacter() {
@@ -342,6 +379,8 @@ Future<void> _playAudio() async {
     setState(() {
       currentIndex = 0;
       _points = [];
+      _ink.strokes.clear();
+      _strokePoints.clear();
     });
     _checkAudioAvailable();
     if (autoSound && _hasAudio) _playAudio();
@@ -587,9 +626,32 @@ Future<void> _playAudio() async {
           child: LayoutBuilder(
             builder: (ctx, cons) {
               return GestureDetector(
-                onPanUpdate: (details) =>
-                    setState(() => _points.add(details.localPosition)),
-                onPanEnd: (_) => _points.add(null),
+                onPanStart: (details) {
+                  setState(() => _points.add(details.localPosition));
+                  _strokePoints = [];
+                  _strokePoints.add(mlkit.StrokePoint(
+                    x: details.localPosition.dx,
+                    y: details.localPosition.dy,
+                    t: DateTime.now().millisecondsSinceEpoch,
+                  ));
+                  _ink.strokes.add(mlkit.Stroke()..points = List.of(_strokePoints));
+                },
+                onPanUpdate: (details) {
+                  setState(() => _points.add(details.localPosition));
+                  _strokePoints.add(mlkit.StrokePoint(
+                    x: details.localPosition.dx,
+                    y: details.localPosition.dy,
+                    t: DateTime.now().millisecondsSinceEpoch,
+                  ));
+                  if (_ink.strokes.isNotEmpty) {
+                    _ink.strokes.last.points = List.of(_strokePoints);
+                  }
+                },
+                onPanEnd: (_) {
+                  setState(() => _points.add(null));
+                  _strokePoints = [];
+                  _recognizeInk();
+                },
                 child: Container(
                   width: cons.maxWidth,
                   height: cons.maxHeight,
