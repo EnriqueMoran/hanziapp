@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../api/batch_api.dart';
 import '../api/group_api.dart';
 import '../api/character_api.dart';
+import '../api/settings_api.dart';
 import 'character_review_screen.dart';
 
 class BatchGroupSelectionScreen extends StatefulWidget {
@@ -27,10 +28,31 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
   Future<void> _load() async {
     final batches = await BatchApi.fetchAll();
     final groups = await GroupApi.fetchAll();
+    final lastBatchId = await SettingsApi.getInt('last_batch_id');
+    final lastGroupId = await SettingsApi.getInt('last_group_id');
     if (!mounted) return;
     setState(() {
       _batches = batches;
       _groups = groups;
+      _selectedBatch = null;
+      for (final b in batches) {
+        if (b.id == lastBatchId) {
+          _selectedBatch = b;
+          break;
+        }
+      }
+      _selectedGroup = null;
+      for (final g in groups) {
+        if (g.id == lastGroupId) {
+          _selectedGroup = g;
+          break;
+        }
+      }
+      if (_selectedGroup != null) {
+        _lastWasGroup = true;
+      } else if (_selectedBatch != null) {
+        _lastWasGroup = false;
+      }
     });
   }
 
@@ -45,16 +67,22 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
     final chars = await CharacterApi.fetchAll();
     List<Character> subset;
     String label;
+    int? batchId;
+    int? groupId;
     if (_lastWasGroup && _selectedGroup != null) {
       subset = chars
           .where((c) => _selectedGroup!.characterIds.contains(c.id))
           .toList();
       label = _selectedGroup!.name;
+      groupId = _selectedGroup!.id;
+      await SettingsApi.setInt('last_group_id', groupId);
     } else if (_selectedBatch != null) {
       subset = chars
           .where((c) => _selectedBatch!.characters.contains(c.character))
           .toList();
       label = _selectedBatch!.name;
+      batchId = _selectedBatch!.id;
+      await SettingsApi.setInt('last_batch_id', batchId);
     } else {
       subset = chars;
       label = '';
@@ -69,6 +97,8 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
         builder: (_) => CharacterReviewScreen(
           initialCharacters: subset,
           batchValue: label,
+          batchId: batchId,
+          groupId: groupId,
         ),
       ),
     );

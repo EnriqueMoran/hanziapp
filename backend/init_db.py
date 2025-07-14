@@ -24,5 +24,9 @@ for item in data:
         item['character'], item.get('pinyin',''), item.get('meaning',''), item.get('level',''), tags, item.get('other',''), item.get('examples','')))
 
 cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('last_reviewed_character', '')")
+cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('last_batch_id', '')")
+cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('last_batch_character', '')")
+cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('last_group_id', '')")
+cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('last_group_character', '')")
 conn.commit()
 conn.close()

@@ -76,12 +76,4 @@ class CharacterApi {
   static Future<void> deleteCharacter(int id) async {
     await http.delete(Uri.parse('$baseUrl/characters/$id'));
   }
-
-  static Future<void> updateLastReviewed(int id) async {
-    await http.put(
-      Uri.parse('$baseUrl/settings/last_reviewed'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'value': id}),
-    );
-  }
 }

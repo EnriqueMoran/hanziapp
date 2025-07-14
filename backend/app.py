@@ -127,21 +127,27 @@ def update_group(gid):
     return jsonify({'status': 'ok'})
 
 
-@app.route('/settings/last_reviewed', methods=['GET', 'PUT'])
-def last_reviewed():
+def _setting_key(key):
     if request.method == 'GET':
-        row = query_db(
-            "SELECT value FROM settings WHERE key='last_reviewed_character'",
-            one=True,
-        )
+        row = query_db('SELECT value FROM settings WHERE key=?', [key], one=True)
         return jsonify(row or {'value': ''})
     else:
         data = request.get_json() or {}
         execute_db(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('last_reviewed_character', ?)",
-            [str(data.get('value', ''))],
+            'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+            [key, str(data.get('value', ''))],
         )
         return jsonify({'status': 'ok'})
+
+
+@app.route('/settings/<key>', methods=['GET', 'PUT'])
+def setting(key):
+    return _setting_key(key)
+
+
+@app.route('/settings/last_reviewed', methods=['GET', 'PUT'])
+def last_reviewed():
+    return _setting_key('last_reviewed_character')
 
 
 if __name__ == '__main__':

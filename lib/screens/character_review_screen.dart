@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:http/http.dart' as http;
 import '../api/character_api.dart';
+import '../api/settings_api.dart';
 
 class CharacterReviewScreen extends StatefulWidget {
   final List<Character>? initialCharacters;
   final String? batchValue;
+  final int? batchId;
+  final int? groupId;
 
   const CharacterReviewScreen({
     Key? key,
     this.initialCharacters,
     this.batchValue,
+    this.batchId,
+    this.groupId,
   }) : super(key: key);
 
   @override
@@ -22,7 +26,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool showHanzi = true;
   bool showPinyin = true;
   bool showTranslation = true;
-  bool random = false;
   bool _editing = false;
 
   // Text controllers for editing
@@ -71,20 +74,22 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       batchValue = (widget.batchValue != null && widget.batchValue!.isNotEmpty)
           ? widget.batchValue!
           : 'None';
-      if (characters.isNotEmpty) {
-        CharacterApi.updateLastReviewed(characters.first.id);
-        _checkAudioAvailable();
-      }
+      _loadInitialIndex();
     } else {
-      // Fetch all characters on startup
-      CharacterApi.fetchAll().then((list) {
+      CharacterApi.fetchAll().then((list) async {
         if (!mounted) return;
+        int start = 0;
+        final id = await SettingsApi.getInt('last_reviewed_character');
+        if (id != null) {
+          final idx = list.indexWhere((c) => c.id == id);
+          if (idx >= 0) start = idx;
+        }
         setState(() {
           characters = list;
-          currentIndex = 0;
+          currentIndex = start;
         });
         if (characters.isNotEmpty) {
-          CharacterApi.updateLastReviewed(characters.first.id);
+          _updateLastCharacter(characters[currentIndex].id);
           _checkAudioAvailable();
         }
       });
@@ -148,7 +153,7 @@ Future<void> _playAudio() async {
         currentIndex--;
         _clearDrawing();
       });
-      CharacterApi.updateLastReviewed(current!.id);
+      _updateLastCharacter(current!.id);
       _checkAudioAvailable();
       if (autoSound && _hasAudio) _playAudio();
     }
@@ -161,7 +166,7 @@ Future<void> _playAudio() async {
         currentIndex++;
         _clearDrawing();
       });
-      CharacterApi.updateLastReviewed(current!.id);
+      _updateLastCharacter(current!.id);
       _checkAudioAvailable();
       if (autoSound && _hasAudio) _playAudio();
     }
@@ -176,7 +181,7 @@ Future<void> _playAudio() async {
         currentIndex = currentIndex.clamp(0, characters.length - 1);
       });
       if (characters.isNotEmpty) {
-        CharacterApi.updateLastReviewed(current!.id);
+        _updateLastCharacter(current!.id);
         _checkAudioAvailable();
       }
     });
@@ -209,7 +214,7 @@ Future<void> _playAudio() async {
           examples: _rightController.text,
         );
         CharacterApi.updateCharacter(characters[currentIndex]);
-        CharacterApi.updateLastReviewed(current!.id);
+        _updateLastCharacter(current!.id);
         _editing = false;
         _checkAudioAvailable();
       });
@@ -225,6 +230,60 @@ Future<void> _playAudio() async {
       _detailsController.text = current?.other ?? '';
       _rightController.text = current?.examples ?? '';
     });
+  }
+
+  Future<void> _loadInitialIndex() async {
+    int start = 0;
+    if (widget.batchId != null) {
+      final id = await SettingsApi.getInt('last_batch_character');
+      if (id != null) {
+        final idx = characters.indexWhere((c) => c.id == id);
+        if (idx >= 0) start = idx;
+      }
+    } else if (widget.groupId != null) {
+      final id = await SettingsApi.getInt('last_group_character');
+      if (id != null) {
+        final idx = characters.indexWhere((c) => c.id == id);
+        if (idx >= 0) start = idx;
+      }
+    } else {
+      final id = await SettingsApi.getInt('last_reviewed_character');
+      if (id != null) {
+        final idx = characters.indexWhere((c) => c.id == id);
+        if (idx >= 0) start = idx;
+      }
+    }
+    if (!mounted) return;
+    setState(() => currentIndex = start);
+    if (characters.isNotEmpty) {
+      _updateLastCharacter(characters[currentIndex].id);
+      _checkAudioAvailable();
+    }
+  }
+
+  void _updateLastCharacter(int id) {
+    if (widget.batchId != null) {
+      SettingsApi.setInt('last_batch_character', id);
+    } else if (widget.groupId != null) {
+      SettingsApi.setInt('last_group_character', id);
+    } else {
+      SettingsApi.setInt('last_reviewed_character', id);
+    }
+  }
+
+  void _restartReview() {
+    if (widget.batchId != null) {
+      SettingsApi.setInt('last_batch_character', null);
+    } else if (widget.groupId != null) {
+      SettingsApi.setInt('last_group_character', null);
+    } else {
+      SettingsApi.setInt('last_reviewed_character', null);
+    }
+    setState(() {
+      currentIndex = 0;
+      _points = [];
+    });
+    _checkAudioAvailable();
   }
 
   String getCharacterAt(int offset) {
@@ -318,14 +377,7 @@ Future<void> _playAudio() async {
     final controls = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ElevatedButton(onPressed: _clearDrawing, child: Text('RESTART')),
-        SizedBox(height: 8),
-        Row(
-          children: [
-            Text('RANDOM'),
-            Switch(value: random, onChanged: (v) => setState(() => random = v)),
-          ],
-        ),
+        ElevatedButton(onPressed: _restartReview, child: Text('RESTART')),
         SizedBox(height: 8),
         Text('Batch/ Group: $batchValue', style: TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
