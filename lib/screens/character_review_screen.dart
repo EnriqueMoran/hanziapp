@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 
 class CharacterReviewScreen extends StatefulWidget {
   final List<Character>? initialCharacters;
   final String? batchValue;
 
-  const CharacterReviewScreen({Key? key, this.initialCharacters, this.batchValue})
+  const CharacterReviewScreen(
+      {Key? key, this.initialCharacters, this.batchValue})
       : super(key: key);
 
   @override
@@ -31,6 +33,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   int currentIndex = 0;
   List<Offset?> _points = [];
 
+  final AudioPlayer _player = AudioPlayer();
 
   Character? get current =>
       characters.isEmpty ? null : characters[currentIndex];
@@ -56,10 +59,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
     if (widget.initialCharacters != null) {
       characters = List.of(widget.initialCharacters!);
-      batchValue =
-          (widget.batchValue != null && widget.batchValue!.isNotEmpty)
-              ? widget.batchValue!
-              : 'None';
+      batchValue = (widget.batchValue != null && widget.batchValue!.isNotEmpty)
+          ? widget.batchValue!
+          : 'None';
       if (characters.isNotEmpty) {
         CharacterApi.updateLastReviewed(characters.first.id);
       }
@@ -91,6 +93,15 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   void _clearDrawing() => setState(() => _points = []);
 
+  Future<void> _playAudio() async {
+    final char = current?.character;
+    if (char == null || char.isEmpty) return;
+    final url = 'https://data.dong-chinese.com/hsk-audio/' + char + '.mp3';
+    try {
+      await _player.play(url);
+    } catch (_) {}
+  }
+
   void _goToPreviousCharacter() {
     if (currentIndex > 0) {
       setState(() {
@@ -98,6 +109,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         _clearDrawing();
       });
       CharacterApi.updateLastReviewed(current!.id);
+      if (autoSound) _playAudio();
     }
   }
 
@@ -108,6 +120,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         _clearDrawing();
       });
       CharacterApi.updateLastReviewed(current!.id);
+      if (autoSound) _playAudio();
     }
   }
 
@@ -189,10 +202,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final toggles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildToggle('Auto Sound', autoSound, (v) => setState(() => autoSound = v)),
-        _buildToggle('Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
-        _buildToggle('Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
-        _buildToggle('Show Translation', showTranslation, (v) => setState(() => showTranslation = v)),
+        _buildToggle(
+            'Auto Sound', autoSound, (v) => setState(() => autoSound = v)),
+        _buildToggle(
+            'Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
+        _buildToggle(
+            'Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
+        _buildToggle('Show Translation', showTranslation,
+            (v) => setState(() => showTranslation = v)),
       ],
     );
 
@@ -271,6 +288,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         ]),
         SizedBox(height: 8),
         Text('Batch/ Group: $batchValue', style: TextStyle(fontSize: 16)),
+        const SizedBox(height: 8),
+        ElevatedButton(onPressed: _playAudio, child: const Text('LISTEN')),
       ],
     );
 
@@ -285,8 +304,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               margin: EdgeInsets.only(right: 4),
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blueGrey.withOpacity(0.2),
-                border: Border.all(color: Colors.blueGrey),
+                color: Colors.teal.withOpacity(0.1),
+                border: Border.all(color: Colors.teal),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: _editing
@@ -356,7 +375,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 children: [
                   ElevatedButton(
                     onPressed: _deleteCharacter,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
                     child: Text('DELETE CHARACTER'),
                   ),
                   SizedBox(width: 8),
@@ -370,7 +390,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                     SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _cancelEdit,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
                       child: Text('CANCEL CHANGES'),
                     ),
                   ],
