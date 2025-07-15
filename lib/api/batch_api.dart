@@ -21,7 +21,7 @@ class Batch {
 }
 
 class BatchApi {
-  static const String baseUrl = 'http://172.22.71.184:5000';
+  static const String baseUrl = 'http://172.22.208.95:5000';
 
   static Future<List<Batch>> fetchAll() async {
     final response = await http.get(Uri.parse('$baseUrl/batches'));

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class SettingsApi {
-  static const String baseUrl = 'http://172.22.71.184:5000';
+  static const String baseUrl = 'http://172.22.208.95:5000';
 
   static Future<String> _getValue(String key) async {
     final response = await http.get(Uri.parse('$baseUrl/settings/$key'));
