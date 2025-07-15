@@ -14,3 +14,11 @@ flutter_export_environment.sh
 .metadata
 backend/hanzi.db
 hanzi.db
+
+# Exclude platform icons
+android/**/res/mipmap-*/*
+ios/**/Assets.xcassets/**/*.png
+macos/**/Assets.xcassets/**/*.png
+web/icons/*.png
+web/favicon.png
+windows/runner/resources/*.ico

@@ -47,3 +47,16 @@ The database file is not kept in version control. To create it from `data.json`,
 ```
 
 The service will be available at `http://localhost:5000`.
+
+## Android Build
+
+An `android/` folder is now included so the project can be compiled for
+Android devices. After fetching the dependencies you can build the APK with:
+
+```bash
+flutter build apk --release
+```
+
+The app relies on Google's ML Kit Digital Ink Recognition via the
+`google_mlkit_digital_ink_recognition` package to process handwritten
+characters.
