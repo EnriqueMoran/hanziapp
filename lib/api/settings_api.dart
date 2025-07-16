@@ -36,4 +36,12 @@ class SettingsApi {
   static Future<void> setInt(String key, int? value) async {
     await _setValue(key, value == null ? '' : value.toString());
   }
+
+  static Future<String> getString(String key) async {
+    return await _getValue(key);
+  }
+
+  static Future<void> setString(String key, String? value) async {
+    await _setValue(key, value ?? '');
+  }
 }
