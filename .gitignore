@@ -14,6 +14,7 @@ flutter_export_environment.sh
 .metadata
 backend/hanzi.db
 hanzi.db
+db/
 
 # Exclude platform icons
 android/**/res/mipmap-*/*
