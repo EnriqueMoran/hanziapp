@@ -2,7 +2,11 @@ version: '3'
 services:
   backend:
     build: ./backend
+    environment:
+      - DB_PATH=/data/hanzi.db
     volumes:
-      - ./backend/hanzi.db:/app/hanzi.db
+      - hanzi-data:/data
     ports:
       - "5000:5000"
+volumes:
+  hanzi-data:

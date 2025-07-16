@@ -1,7 +1,8 @@
 import json
 import sqlite3
+import os
 
-DB_PATH = 'hanzi.db'
+DB_PATH = os.environ.get('DB_PATH', 'hanzi.db')
 JSON_PATH = 'data.json'
 
 def main():

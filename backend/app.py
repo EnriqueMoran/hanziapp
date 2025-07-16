@@ -1,8 +1,9 @@
 from flask import Flask, jsonify, g, request
 from flask_cors import CORS
 import sqlite3
+import os
 
-DATABASE = 'hanzi.db'
+DATABASE = os.environ.get('DB_PATH', 'hanzi.db')
 
 app = Flask(__name__)
 CORS(app)
