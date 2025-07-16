@@ -23,3 +23,6 @@ macos/**/Assets.xcassets/**/*.png
 web/icons/*.png
 web/favicon.png
 windows/runner/resources/*.ico
+
+# Exclude configuration
+lib/api/api_config.dart
