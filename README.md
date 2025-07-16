@@ -65,6 +65,18 @@ docker-compose exec backend python export_data.py backup.json
 docker-compose exec backend python import_data.py backup.json
 ```
 
+### Importing legacy data
+
+For character lists in the older JSON format (one object per line with an
+`_id` field) use `import_legacy_json.py` to load them:
+
+```bash
+docker-compose exec backend python import_legacy_json.py old_data.json
+```
+
+The script separates the example sentences from the `other` text and preserves
+the original order based on each record's OID.
+
 The service will be available at `http://localhost:5000` and is protected by a
 simple token based authentication. Requests must include the `X-API-Token`
 header using the same value configured in `docker-compose.yml` via
