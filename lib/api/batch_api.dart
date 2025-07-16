@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'api_config.dart';
 
 class Batch {
   final int id;
@@ -21,10 +22,13 @@ class Batch {
 }
 
 class BatchApi {
-  static const String baseUrl = 'http://172.22.208.95:5000';
+  static const String baseUrl = ApiConfig.baseUrl;
 
   static Future<List<Batch>> fetchAll() async {
-    final response = await http.get(Uri.parse('$baseUrl/batches'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/batches'),
+      headers: {'X-API-Token': ApiConfig.apiToken},
+    );
     if (response.statusCode == 200) {
       final List list = json.decode(response.body);
       return list.map((e) => Batch.fromJson(e)).toList();
@@ -42,7 +46,10 @@ class BatchApi {
     ];
     await http.post(
       Uri.parse('$baseUrl/batches'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Token': ApiConfig.apiToken,
+      },
       body: json.encode(data),
     );
   }

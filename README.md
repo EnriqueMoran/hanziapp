@@ -31,6 +31,10 @@ flutter pub get
 flutter run -d chrome  # or select another connected device
 ```
 
+The backend API URL and authentication token used by the Flutter code are
+defined in `lib/api/api_config.dart`. Update this file when deploying the backend
+to a different host.
+
 
 ## Backend API
 
@@ -46,7 +50,10 @@ The database file is not kept in version control. To create it from `data.json`,
 ./backend/create_db.sh
 ```
 
-The service will be available at `http://localhost:5000`.
+The service will be available at `http://localhost:5000` and is protected by a
+simple token based authentication. Requests must include the `X-API-Token`
+header using the same value configured in `docker-compose.yml` via
+`API_TOKEN`.
 
 ## Android Build
 

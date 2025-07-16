@@ -1,11 +1,22 @@
 from flask import Flask, jsonify, g, request
 from flask_cors import CORS
+import os
 import sqlite3
 
 DATABASE = 'hanzi.db'
 
 app = Flask(__name__)
 CORS(app)
+
+API_TOKEN = os.environ.get('API_TOKEN')
+
+
+@app.before_request
+def authenticate():
+    if API_TOKEN:
+        token = request.headers.get('X-API-Token')
+        if token != API_TOKEN:
+            return jsonify({'error': 'unauthorized'}), 401
 
 
 def get_db():
