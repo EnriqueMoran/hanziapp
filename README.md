@@ -44,10 +44,25 @@ A simple Flask service under `backend/` exposes the characters stored in a SQLit
 docker-compose up --build
 ```
 
+The container stores `hanzi.db` inside a named Docker volume (`hanzi_db`) so
+the data persists across restarts.
+
 The database file is not kept in version control. To create it from `data.json`, run:
 
 ```bash
 ./backend/create_db.sh
+```
+
+### Backup and restore
+
+Use the helper scripts in `backend/` to export or import all characters as JSON:
+
+```bash
+# Export all records to backup.json
+docker-compose exec backend python export_data.py backup.json
+
+# Import records from a JSON file
+docker-compose exec backend python import_data.py backup.json
 ```
 
 The service will be available at `http://localhost:5000` and is protected by a

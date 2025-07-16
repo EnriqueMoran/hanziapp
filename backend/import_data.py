@@ -1,12 +1,20 @@
 import json
 import sqlite3
+import sys
 
 DB_PATH = 'hanzi.db'
 JSON_PATH = 'data.json'
 
 def main():
+    if len(sys.argv) < 2:
+        print("Usage: python import_data.py <json_file> [db_path]")
+        sys.exit(1)
+
+    json_path = sys.argv[1]
+    db_path = sys.argv[2] if len(sys.argv) > 2 else DB_PATH
+
     # Connect to your SQLite database
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(db_path)
     cur = conn.cursor()
 
     # Ensure the characters table exists (won't modify it if already correct)
@@ -24,7 +32,7 @@ def main():
     ''')
 
     # Load the JSON array from file
-    with open(JSON_PATH, 'r', encoding='utf-8') as f:
+    with open(json_path, 'r', encoding='utf-8') as f:
         records = json.load(f)
 
     # Iterate and upsert each record
@@ -46,7 +54,7 @@ def main():
     # Commit changes and close
     conn.commit()
     conn.close()
-    print(f"Upserted {len(records)} characters into '{DB_PATH}'.")
+    print(f"Upserted {len(records)} characters into '{db_path}'.")
 
 if __name__ == '__main__':
     main()

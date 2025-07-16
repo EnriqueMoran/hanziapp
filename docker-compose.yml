@@ -3,8 +3,11 @@ services:
   backend:
     build: ./backend
     volumes:
-      - ./backend/hanzi.db:/app/hanzi.db
+      - hanzi_db:/app/hanzi.db
     ports:
       - "5000:5000"
     environment:
       - API_TOKEN=changeme
+
+volumes:
+  hanzi_db:
