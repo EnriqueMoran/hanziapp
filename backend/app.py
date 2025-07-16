@@ -13,6 +13,8 @@ API_TOKEN = os.environ.get('API_TOKEN')
 
 @app.before_request
 def authenticate():
+    if request.method == 'OPTIONS':
+        return
     if API_TOKEN:
         token = request.headers.get('X-API-Token')
         if token != API_TOKEN:
