@@ -24,6 +24,7 @@ def main():
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
 
+    # Ensure required tables exist
     cur.execute('''
         CREATE TABLE IF NOT EXISTS characters (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,6 +37,10 @@ def main():
             examples TEXT
         )
     ''')
+    cur.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS batches (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS tags (name TEXT PRIMARY KEY)')
 
     records = []
     with open(json_path, 'r', encoding='utf-8') as f:

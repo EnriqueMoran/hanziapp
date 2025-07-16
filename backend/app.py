@@ -169,6 +169,8 @@ def update_group(gid):
 
 
 def _setting_key(key):
+    # Ensure the settings table exists before querying
+    execute_db('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
     if request.method == 'GET':
         row = query_db('SELECT value FROM settings WHERE key=?', [key], one=True)
         return jsonify(row or {'value': ''})

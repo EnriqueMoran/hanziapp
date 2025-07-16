@@ -64,6 +64,7 @@ docker-compose exec backend python export_data.py backup.json
 # Import records from a JSON file
 docker-compose exec backend python import_data.py backup.json
 ```
+These scripts automatically create any missing tables in the database.
 
 ### Importing legacy data
 
