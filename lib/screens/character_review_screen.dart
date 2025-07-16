@@ -403,7 +403,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   Widget build(BuildContext context) {
     final screenW = MediaQuery.of(context).size.width;
     final screenH = MediaQuery.of(context).size.height;
-    final exampleHeight = screenH * 0.40;
+    final exampleHeight = screenH * 0.36;
     final drawingHeight = screenH * 0.20;
     final contentWidth = screenW - 48;
     final panelWidth = contentWidth * 0.50;
