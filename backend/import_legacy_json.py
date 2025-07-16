@@ -13,6 +13,25 @@ def extract_examples(text: str):
     return text.strip(), ''
 
 
+def ensure_tables(cur):
+    cur.execute(
+        '''CREATE TABLE IF NOT EXISTS characters (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            character TEXT UNIQUE,
+            pinyin TEXT,
+            meaning TEXT,
+            level TEXT,
+            tags TEXT,
+            other TEXT,
+            examples TEXT
+        )'''
+    )
+    cur.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS batches (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS tags (name TEXT PRIMARY KEY)')
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python import_legacy_json.py <json_file> [db_path]")
@@ -24,23 +43,7 @@ def main():
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
 
-    # Ensure required tables exist
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS characters (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            character TEXT UNIQUE,
-            pinyin TEXT,
-            meaning TEXT,
-            level TEXT,
-            tags TEXT,
-            other TEXT,
-            examples TEXT
-        )
-    ''')
-    cur.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
-    cur.execute('CREATE TABLE IF NOT EXISTS batches (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
-    cur.execute('CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
-    cur.execute('CREATE TABLE IF NOT EXISTS tags (name TEXT PRIMARY KEY)')
+    ensure_tables(cur)
 
     records = []
     with open(json_path, 'r', encoding='utf-8') as f:
@@ -52,7 +55,6 @@ def main():
             oid = data.get('_id', {}).get('$oid', '')
             records.append((oid, data))
 
-    # Keep order by OID
     records.sort(key=lambda r: r[0])
 
     for _, rec in records:
@@ -61,15 +63,16 @@ def main():
         meaning = rec.get('meaning', '')
         level = rec.get('level', '')
         tags = ','.join(rec.get('tags', []))
-        other = rec.get('other', '')
-        other, examples = extract_examples(other)
+        other, examples = extract_examples(rec.get('other', ''))
 
         cur.execute(
             '''INSERT OR REPLACE INTO characters
                (character, pinyin, meaning, level, tags, other, examples)
                VALUES (?, ?, ?, ?, ?, ?, ?)''',
-            (char, pinyin, meaning, level, tags, other, examples)
+            (char, pinyin, meaning, level, tags, other, examples),
         )
+        for tag in rec.get('tags', []):
+            cur.execute('INSERT OR IGNORE INTO tags (name) VALUES (?)', (tag,))
 
     conn.commit()
     conn.close()

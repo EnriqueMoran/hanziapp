@@ -55,13 +55,13 @@ The database file is not kept in version control. To create it from `data.json`,
 
 ### Backup and restore
 
-Use the helper scripts in `backend/` to export or import all characters as JSON:
+Use the helper scripts in `backend/` to export or import the entire database as JSON:
 
 ```bash
-# Export all records to backup.json
+# Export all tables to backup.json
 docker-compose exec backend python export_data.py backup.json
 
-# Import records from a JSON file
+# Import all tables from a JSON file
 docker-compose exec backend python import_data.py backup.json
 ```
 These scripts automatically create any missing tables in the database.

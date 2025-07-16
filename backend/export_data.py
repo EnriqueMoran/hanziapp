@@ -17,26 +17,22 @@ def main():
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    cur.execute("SELECT character, pinyin, meaning, level, tags, other, examples FROM characters")
-    rows = cur.fetchall()
+    def fetch_all(query):
+        cur.execute(query)
+        return [dict(r) for r in cur.fetchall()]
 
-    data = []
-    for r in rows:
-        item = {
-            'character': r['character'],
-            'pinyin': r['pinyin'],
-            'meaning': r['meaning'],
-            'level': r['level'],
-            'tags': [t for t in (r['tags'] or '').split(',') if t],
-            'other': r['other'],
-            'examples': r['examples']
-        }
-        data.append(item)
+    data = {
+        'characters': fetch_all('SELECT * FROM characters'),
+        'batches': fetch_all('SELECT * FROM batches'),
+        'groups': fetch_all('SELECT * FROM groups'),
+        'tags': [r['name'] for r in fetch_all('SELECT name FROM tags')],
+        'settings': {r['key']: r['value'] for r in fetch_all('SELECT * FROM settings')},
+    }
 
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    print(f"Exported {len(data)} characters to '{json_path}'.")
+    print(f"Exported database to '{json_path}'.")
 
 
 if __name__ == '__main__':
