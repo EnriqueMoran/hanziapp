@@ -44,8 +44,9 @@ A simple Flask service under `backend/` exposes the characters stored in a SQLit
 docker-compose up --build
 ```
 
-The container stores `hanzi.db` inside a named Docker volume (`hanzi_db`) so
-the data persists across restarts.
+The container stores the database file inside a named Docker volume (`hanzi_db`)
+mounted at `/data`. The backend reads the path from the `DB_PATH` environment
+variable (default `/data/hanzi.db`) so the data persists across restarts.
 
 The database file is not kept in version control. To create it from `data.json`, run:
 
@@ -64,7 +65,8 @@ docker-compose exec backend python export_data.py backup.json
 # Import all tables from a JSON file
 docker-compose exec backend python import_data.py backup.json
 ```
-These scripts automatically create any missing tables in the database.
+These scripts automatically create any missing tables in the database and honor
+the `DB_PATH` environment variable to locate the SQLite file.
 
 ### Importing legacy data
 

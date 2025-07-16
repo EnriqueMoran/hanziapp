@@ -2,7 +2,9 @@ import json
 import sqlite3
 import sys
 
-DB_PATH = 'hanzi.db'
+import os
+
+DB_PATH = os.environ.get('DB_PATH', 'hanzi.db')
 
 
 def extract_examples(text: str):

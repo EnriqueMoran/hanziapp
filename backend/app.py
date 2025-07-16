@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 import sqlite3
 
-DATABASE = 'hanzi.db'
+DATABASE = os.environ.get('DB_PATH', 'hanzi.db')
 
 app = Flask(__name__)
 CORS(app)
