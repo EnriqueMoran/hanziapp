@@ -46,7 +46,8 @@ docker-compose up --build
 
 The container stores the database file inside a named Docker volume (`hanzi_db`)
 mounted at `/data`. The backend reads the path from the `DB_PATH` environment
-variable (default `/data/hanzi.db`) so the data persists across restarts.
+variable (default `/data/hanzi.db`) so the data persists across restarts. When
+the service starts it automatically creates any missing tables in the database.
 
 The database file is not kept in version control. To create it from `data.json`, run:
 

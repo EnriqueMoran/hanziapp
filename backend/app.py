@@ -11,6 +11,32 @@ CORS(app)
 API_TOKEN = os.environ.get('API_TOKEN')
 
 
+def ensure_tables():
+    conn = sqlite3.connect(DATABASE)
+    cur = conn.cursor()
+    cur.execute(
+        '''CREATE TABLE IF NOT EXISTS characters (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            character TEXT UNIQUE,
+            pinyin TEXT,
+            meaning TEXT,
+            level TEXT,
+            tags TEXT,
+            other TEXT,
+            examples TEXT
+        )'''
+    )
+    cur.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS batches (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS tags (name TEXT PRIMARY KEY)')
+    conn.commit()
+    conn.close()
+
+
+ensure_tables()
+
+
 @app.before_request
 def authenticate():
     if request.method == 'OPTIONS':
