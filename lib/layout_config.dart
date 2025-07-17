@@ -36,7 +36,7 @@ class LayoutConfig {
         return const LayoutConfig(
           showTouchPanel: true,
           exampleHeightRatio: 0.26,
-          drawingHeightRatio: 0.20,
+          drawingHeightRatio: 0.21,
           panelWidthRatio: 0.55,
         );
     }

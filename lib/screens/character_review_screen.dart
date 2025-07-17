@@ -418,13 +418,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         }),
         if (showAllToggles)
           _buildToggle('Show Hanzi', showHanzi,
-              (v) => setState(() => showHanzi = v)),
+                  (v) => setState(() => showHanzi = v)),
         if (showAllToggles)
           _buildToggle('Show Pinyin', showPinyin,
-              (v) => setState(() => showPinyin = v)),
+                  (v) => setState(() => showPinyin = v)),
         if (showAllToggles)
           _buildToggle('Show Translation', showTranslation,
-              (v) => setState(() => showTranslation = v)),
+                  (v) => setState(() => showTranslation = v)),
       ],
     );
 
@@ -465,13 +465,19 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               ? TextField(
             controller: pinyinController,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: UiScale.mediumFont, fontFamily: 'NotoSans'),
+            style: TextStyle(
+              fontSize: UiScale.mediumFont,
+              fontFamily: 'NotoSans',
+            ),
           )
               : SelectableText(
             current?.pinyin ?? '',
             strutStyle: fixedStrut,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: UiScale.mediumFont, fontFamily: 'NotoSans'),
+            style: TextStyle(
+              fontSize: UiScale.mediumFont,
+              fontFamily: 'NotoSans',
+            ),
           ),
         SizedBox(height: 6),
         if (editing || showTranslation)
@@ -495,7 +501,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       children: [
         ElevatedButton(onPressed: restartReview, child: Text('RESTART')),
         SizedBox(height: 8),
-        ElevatedButton(onPressed: hasAudio ? playAudio : null, child: Text('LISTEN')),
+        ElevatedButton(
+            onPressed: hasAudio ? playAudio : null, child: Text('LISTEN')),
       ],
     );
 
@@ -575,35 +582,40 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 SizedBox(height: 24),
                 exampleArea,
                 SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ElevatedButton(
+                // Only show delete/edit buttons on tablet/browser, not on smartphone
+                if (DeviceConfig.deviceType != DeviceType.smartphone)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
                           onPressed: deleteCharacter,
                           style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red),
-                          child: Text('DELETE CHARACTER')),
-                      SizedBox(width: 8),
-                      ElevatedButton(
+                          child: Text('DELETE CHARACTER'),
+                        ),
+                        SizedBox(width: 8),
+                        ElevatedButton(
                           onPressed: toggleEdit,
                           style: ElevatedButton.styleFrom(
                               backgroundColor:
                               editing ? Colors.green : null),
-                          child:
-                          Text(editing ? 'SAVE CHANGES' : 'EDIT CHARACTER')),
-                      if (editing) ...[
-                        SizedBox(width: 8),
-                        ElevatedButton(
+                          child: Text(
+                              editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
+                        ),
+                        if (editing) ...[
+                          SizedBox(width: 8),
+                          ElevatedButton(
                             onPressed: cancelEdit,
                             style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red),
-                            child: Text('CANCEL CHANGES')),
+                            child: Text('CANCEL CHANGES'),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
                 if (layout.showTouchPanel)
                   SizedBox(height: drawingHeight + 56),
               ],
@@ -628,21 +640,27 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                             width: panelWidth,
                             child: GestureDetector(
                               onPanStart: (details) {
-                                setState(() => points.add(details.localPosition));
+                                setState(() =>
+                                    points.add(details.localPosition));
                                 strokePoints = [];
                                 strokePoints.add(mlkit.StrokePoint(
                                     x: details.localPosition.dx,
                                     y: details.localPosition.dy,
-                                    t: DateTime.now().millisecondsSinceEpoch));
-                                ink.strokes.add(mlkit.Stroke()..points = List.of(strokePoints));
+                                    t: DateTime.now()
+                                        .millisecondsSinceEpoch));
+                                ink.strokes
+                                    .add(mlkit.Stroke()..points = List.of(strokePoints));
                               },
                               onPanUpdate: (details) {
-                                setState(() => points.add(details.localPosition));
+                                setState(() =>
+                                    points.add(details.localPosition));
                                 strokePoints.add(mlkit.StrokePoint(
                                     x: details.localPosition.dx,
                                     y: details.localPosition.dy,
-                                    t: DateTime.now().millisecondsSinceEpoch));
-                                ink.strokes.last.points = List.of(strokePoints);
+                                    t: DateTime.now()
+                                        .millisecondsSinceEpoch));
+                                ink.strokes.last.points =
+                                    List.of(strokePoints);
                                 queueRecognition();
                               },
                               onPanEnd: (_) {
@@ -668,7 +686,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                                 !modelReady
                                     ? 'Recognized drawing: $recognizerStatus'
                                     : 'Recognized drawing: ${recognizedText.isEmpty ? recognizerStatus : recognizedText}${recognizedScore != null ? ' (${(recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
-                                style: TextStyle(fontSize: UiScale.smallFont),
+                                style:
+                                TextStyle(fontSize: UiScale.smallFont),
                               ),
                             ),
                           ),
@@ -684,7 +703,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       if (layout.showTouchPanel)
                         ElevatedButton(
                             onPressed: clearDrawing,
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red),
                             child: Text('DELETE')),
                       if (layout.showTouchPanel) SizedBox(width: 8),
                       ElevatedButton(
@@ -692,8 +712,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                           child: Text('PREVIOUS')),
                       SizedBox(width: 8),
                       ElevatedButton(
-                          onPressed: goToNextCharacter,
-                          child: Text('NEXT')),
+                          onPressed: goToNextCharacter, child: Text('NEXT')),
                     ],
                   ),
                 ],
@@ -733,22 +752,22 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       children: [
         editing
             ? TextField(
-                controller: levelController,
-                decoration: InputDecoration(labelText: 'Level'))
+            controller: levelController,
+            decoration: InputDecoration(labelText: 'Level'))
             : SelectableText('Level: ${current?.level ?? ''}'),
         SizedBox(height: 4),
         editing
             ? Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: tagsController,
-                      decoration: InputDecoration(labelText: 'Tags'),
-                    ),
-                  ),
-                  IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
-                ],
-              )
+          children: [
+            Expanded(
+              child: TextField(
+                controller: tagsController,
+                decoration: InputDecoration(labelText: 'Tags'),
+              ),
+            ),
+            IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
+          ],
+        )
             : SelectableText('Tags: ${current?.tags.join(', ')}'),
         SizedBox(height: 8),
         SelectableText('Batch/Group: $batchLabel',
@@ -773,7 +792,10 @@ class _DrawingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white..strokeWidth = 4..strokeCap = StrokeCap.round;
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
     for (var i = 0; i < points.length - 1; i++) {
       final p1 = points[i], p2 = points[i + 1];
       if (p1 != null && p2 != null) {
