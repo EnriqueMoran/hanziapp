@@ -400,7 +400,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     return characters[i].character;
   }
 
-  Widget _buildBrowserLayout(BuildContext context) {
+  Widget _buildLayout(BuildContext context, {required bool showTouchPanel}) {
     final screenW = MediaQuery.of(context).size.width;
     final screenH = MediaQuery.of(context).size.height;
     final exampleHeight = screenH * 0.36;
@@ -597,17 +597,19 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                     ],
                   ),
                 ),
-                SizedBox(height: drawingHeight + 56),
+                if (showTouchPanel)
+                  SizedBox(height: drawingHeight + 56),
               ],
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+          if (showTouchPanel)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   SizedBox(
                     height: drawingHeight,
                     width: contentWidth,
@@ -735,10 +737,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     );
   }
 
-  Widget _buildTabletLayout(BuildContext context) => _buildBrowserLayout(context);
+  Widget _buildBrowserLayout(BuildContext context) =>
+      _buildLayout(context, showTouchPanel: false);
+
+  Widget _buildTabletLayout(BuildContext context) =>
+      _buildLayout(context, showTouchPanel: true);
 
   Widget _buildSmartphoneLayout(BuildContext context) =>
-      _buildBrowserLayout(context);
+      _buildLayout(context, showTouchPanel: true);
 
   @override
   Widget build(BuildContext context) {
