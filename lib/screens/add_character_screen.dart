@@ -233,6 +233,7 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
         Expanded(
           child: ElevatedButton(
             onPressed: _clearAll,
+            style: buttonStyle(),
             child: const Text('Clear'),
           ),
         ),
@@ -240,12 +241,17 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
         Expanded(
           child: ElevatedButton(
             onPressed: () => Navigator.pop(context),
+            style: buttonStyle(),
             child: const Text('Cancel'),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: ElevatedButton(onPressed: _save, child: const Text('Save')),
+          child: ElevatedButton(
+            onPressed: _save,
+            style: buttonStyle(),
+            child: const Text('Save'),
+          ),
         ),
       ],
     );

@@ -486,9 +486,17 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final controls = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ElevatedButton(onPressed: restartReview, child: Text('RESTART')),
+        ElevatedButton(
+          onPressed: restartReview,
+          style: buttonStyle(),
+          child: Text('RESTART'),
+        ),
         SizedBox(height: 8),
-        ElevatedButton(onPressed: hasAudio ? playAudio : null, child: Text('LISTEN')),
+        ElevatedButton(
+          onPressed: hasAudio ? playAudio : null,
+          style: buttonStyle(),
+          child: Text('LISTEN'),
+        ),
       ],
     );
 
@@ -574,25 +582,25 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ElevatedButton(
-                          onPressed: deleteCharacter,
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red),
-                          child: Text('DELETE CHARACTER')),
+                        onPressed: deleteCharacter,
+                        style: buttonStyle(background: Colors.red),
+                        child: Text('DELETE CHARACTER'),
+                      ),
                       SizedBox(width: 8),
                       ElevatedButton(
-                          onPressed: toggleEdit,
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                              editing ? Colors.green : null),
-                          child:
-                          Text(editing ? 'SAVE CHANGES' : 'EDIT CHARACTER')),
+                        onPressed: toggleEdit,
+                        style: buttonStyle(
+                            background: editing ? Colors.green : null),
+                        child:
+                            Text(editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
+                      ),
                       if (editing) ...[
                         SizedBox(width: 8),
                         ElevatedButton(
-                            onPressed: cancelEdit,
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red),
-                            child: Text('CANCEL CHANGES')),
+                          onPressed: cancelEdit,
+                          style: buttonStyle(background: Colors.red),
+                          child: Text('CANCEL CHANGES'),
+                        ),
                       ],
                     ],
                   ),
@@ -677,15 +685,17 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       if (layout.showTouchPanel)
                         ElevatedButton(
                             onPressed: clearDrawing,
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                            style: buttonStyle(background: Colors.red),
                             child: Text('DELETE')),
                       if (layout.showTouchPanel) SizedBox(width: 8),
                       ElevatedButton(
                           onPressed: goToPreviousCharacter,
+                          style: buttonStyle(),
                           child: Text('PREVIOUS')),
                       SizedBox(width: 8),
                       ElevatedButton(
                           onPressed: goToNextCharacter,
+                          style: buttonStyle(),
                           child: Text('NEXT')),
                     ],
                   ),

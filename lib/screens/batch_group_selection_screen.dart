@@ -255,6 +255,7 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
+                    style: buttonStyle(),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -262,6 +263,7 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _startReview,
+                    style: buttonStyle(),
                     child: const Text('Review'),
                   ),
                 ),
