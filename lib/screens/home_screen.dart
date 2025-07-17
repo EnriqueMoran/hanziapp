@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../device_type.dart';
+import '../layout_config.dart';
 import 'character_review_screen.dart';
 import 'batch_group_selection_screen.dart';
 import 'batch_creation_screen.dart';

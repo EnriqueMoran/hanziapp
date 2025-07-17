@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../api/batch_api.dart';
-import '../device_type.dart';
+import '../layout_config.dart';
 
 class BatchCreationScreen extends StatefulWidget {
   const BatchCreationScreen({Key? key}) : super(key: key);

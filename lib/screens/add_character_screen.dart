@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../ui_scale.dart';
-import '../device_type.dart';
+import '../layout_config.dart';
 
 class AddCharacterScreen extends StatefulWidget {
   const AddCharacterScreen({Key? key}) : super(key: key);
@@ -119,6 +119,10 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
   }
 
   Widget _buildBrowserLayout(BuildContext context) {
+    final layout = DeviceConfig.layout;
+    final screenH = MediaQuery.of(context).size.height;
+    final exampleHeight = screenH * layout.exampleHeightRatio;
+
     final previewBox = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -148,7 +152,8 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
       ],
     );
 
-    final exampleArea = Expanded(
+    final exampleArea = SizedBox(
+      height: exampleHeight,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
 import '../ui_scale.dart';
-import '../device_type.dart';
+import '../layout_config.dart';
 import 'package:reorderables/reorderables.dart';
 
 class GroupCreationScreen extends StatefulWidget {

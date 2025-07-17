@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../ui_scale.dart';
-import '../device_type.dart';
+import '../layout_config.dart';
 
 class DeleteCharacterScreen extends StatefulWidget {
   const DeleteCharacterScreen({Key? key}) : super(key: key);

@@ -3,7 +3,7 @@ import '../api/batch_api.dart';
 import '../api/group_api.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
-import '../device_type.dart';
+import '../layout_config.dart';
 import 'character_review_screen.dart';
 
 class BatchGroupSelectionScreen extends StatefulWidget {

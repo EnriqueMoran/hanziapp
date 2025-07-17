@@ -3,7 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
 import '../ui_scale.dart';
-import '../device_type.dart';
+import '../layout_config.dart';
 import 'dart:async';
 import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
 as mlkit;
@@ -400,13 +400,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     return characters[i].character;
   }
 
-  Widget _buildLayout(BuildContext context, {required bool showTouchPanel}) {
+  Widget _buildLayout(BuildContext context, LayoutConfig layout) {
     final screenW = MediaQuery.of(context).size.width;
     final screenH = MediaQuery.of(context).size.height;
-    final exampleHeight = screenH * 0.36;
-    final drawingHeight = screenH * 0.20;
+    final exampleHeight = screenH * layout.exampleHeightRatio;
+    final drawingHeight = screenH * layout.drawingHeightRatio;
     final contentWidth = screenW - 48;
-    final panelWidth = contentWidth * 0.50;
+    final panelWidth = contentWidth * layout.panelWidthRatio;
 
     final toggles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -597,7 +597,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                     ],
                   ),
                 ),
-                if (showTouchPanel)
+                if (layout.showTouchPanel)
                   SizedBox(height: drawingHeight + 56),
               ],
             ),
@@ -609,7 +609,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (showTouchPanel)
+                  if (layout.showTouchPanel)
                     SizedBox(
                       height: drawingHeight,
                       width: contentWidth,
@@ -670,16 +670,16 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                     )
                   else
                     Align(alignment: Alignment.centerLeft, child: _infoColumn()),
-                  SizedBox(height: showTouchPanel ? 16 : 8),
+                  SizedBox(height: layout.showTouchPanel ? 16 : 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (showTouchPanel)
+                      if (layout.showTouchPanel)
                         ElevatedButton(
                             onPressed: clearDrawing,
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                             child: Text('DELETE')),
-                      if (showTouchPanel) SizedBox(width: 8),
+                      if (layout.showTouchPanel) SizedBox(width: 8),
                       ElevatedButton(
                           onPressed: goToPreviousCharacter,
                           child: Text('PREVIOUS')),
@@ -699,13 +699,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   }
 
   Widget _buildBrowserLayout(BuildContext context) =>
-      _buildLayout(context, showTouchPanel: false);
+      _buildLayout(context, LayoutConfig.forType(DeviceType.browser));
 
   Widget _buildTabletLayout(BuildContext context) =>
-      _buildLayout(context, showTouchPanel: true);
+      _buildLayout(context, LayoutConfig.forType(DeviceType.tablet));
 
   Widget _buildSmartphoneLayout(BuildContext context) =>
-      _buildLayout(context, showTouchPanel: true);
+      _buildLayout(context, LayoutConfig.forType(DeviceType.smartphone));
 
   @override
   Widget build(BuildContext context) {
