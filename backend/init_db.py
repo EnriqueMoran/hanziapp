@@ -1,9 +1,12 @@
 import json
 import sqlite3
+import os
 
 
 
-conn = sqlite3.connect('hanzi.db')
+DB_PATH = os.environ.get('DB_PATH', 'hanzi.db')
+
+conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
 
 cur.execute('DROP TABLE IF EXISTS characters')

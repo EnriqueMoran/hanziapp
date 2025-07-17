@@ -1,11 +1,50 @@
 from flask import Flask, jsonify, g, request
 from flask_cors import CORS
+import os
 import sqlite3
 
-DATABASE = 'hanzi.db'
+DATABASE = os.environ.get('DB_PATH', 'hanzi.db')
 
 app = Flask(__name__)
 CORS(app)
+
+API_TOKEN = os.environ.get('API_TOKEN')
+
+
+def ensure_tables():
+    conn = sqlite3.connect(DATABASE)
+    cur = conn.cursor()
+    cur.execute(
+        '''CREATE TABLE IF NOT EXISTS characters (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            character TEXT UNIQUE,
+            pinyin TEXT,
+            meaning TEXT,
+            level TEXT,
+            tags TEXT,
+            other TEXT,
+            examples TEXT
+        )'''
+    )
+    cur.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS batches (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, characters TEXT)')
+    cur.execute('CREATE TABLE IF NOT EXISTS tags (name TEXT PRIMARY KEY)')
+    conn.commit()
+    conn.close()
+
+
+ensure_tables()
+
+
+@app.before_request
+def authenticate():
+    if request.method == 'OPTIONS':
+        return
+    if API_TOKEN:
+        token = request.headers.get('X-API-Token')
+        if token != API_TOKEN:
+            return jsonify({'error': 'unauthorized'}), 401
 
 
 def get_db():
@@ -158,6 +197,8 @@ def update_group(gid):
 
 
 def _setting_key(key):
+    # Ensure the settings table exists before querying
+    execute_db('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
     if request.method == 'GET':
         row = query_db('SELECT value FROM settings WHERE key=?', [key], one=True)
         return jsonify(row or {'value': ''})

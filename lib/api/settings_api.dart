@@ -1,11 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'api_config.dart';
 
 class SettingsApi {
-  static const String baseUrl = 'http://172.22.208.95:5000';
+  static const String baseUrl = ApiConfig.baseUrl;
 
   static Future<String> _getValue(String key) async {
-    final response = await http.get(Uri.parse('$baseUrl/settings/$key'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/settings/$key'),
+      headers: {'X-API-Token': ApiConfig.apiToken},
+    );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return data['value'] as String? ?? '';
@@ -16,7 +20,10 @@ class SettingsApi {
   static Future<void> _setValue(String key, String value) async {
     await http.put(
       Uri.parse('$baseUrl/settings/$key'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Token': ApiConfig.apiToken,
+      },
       body: json.encode({'value': value}),
     );
   }
@@ -28,5 +35,13 @@ class SettingsApi {
 
   static Future<void> setInt(String key, int? value) async {
     await _setValue(key, value == null ? '' : value.toString());
+  }
+
+  static Future<String> getString(String key) async {
+    return await _getValue(key);
+  }
+
+  static Future<void> setString(String key, String? value) async {
+    await _setValue(key, value ?? '');
   }
 }

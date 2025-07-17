@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'api_config.dart';
 
 class Character {
   final int id;
@@ -37,10 +38,13 @@ class Character {
 }
 
 class CharacterApi {
-  static const String baseUrl = 'http://172.22.208.95:5000';
+  static const String baseUrl = ApiConfig.baseUrl;
 
   static Future<List<Character>> fetchAll() async {
-    final response = await http.get(Uri.parse('$baseUrl/characters'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/characters'),
+      headers: {'X-API-Token': ApiConfig.apiToken},
+    );
     if (response.statusCode == 200) {
       final List list = json.decode(response.body);
       return list.map((e) => Character.fromJson(e)).toList();
@@ -49,7 +53,10 @@ class CharacterApi {
   }
 
   static Future<Character?> fetchCharacter(String char) async {
-    final response = await http.get(Uri.parse('$baseUrl/characters/$char'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/characters/$char'),
+      headers: {'X-API-Token': ApiConfig.apiToken},
+    );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return Character.fromJson(data);
@@ -60,7 +67,10 @@ class CharacterApi {
   static Future<void> updateCharacter(Character c) async {
     await http.put(
       Uri.parse('$baseUrl/characters/${c.id}'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Token': ApiConfig.apiToken,
+      },
       body: json.encode({
         'character': c.character,
         'pinyin': c.pinyin,
@@ -74,13 +84,19 @@ class CharacterApi {
   }
 
   static Future<void> deleteCharacter(int id) async {
-    await http.delete(Uri.parse('$baseUrl/characters/$id'));
+    await http.delete(
+      Uri.parse('$baseUrl/characters/$id'),
+      headers: {'X-API-Token': ApiConfig.apiToken},
+    );
   }
 
   static Future<int?> createCharacter(Character c) async {
     final response = await http.post(
       Uri.parse('$baseUrl/characters'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Token': ApiConfig.apiToken,
+      },
       body: json.encode({
         'character': c.character,
         'pinyin': c.pinyin,
@@ -99,7 +115,10 @@ class CharacterApi {
   }
 
   static Future<List<String>> fetchTags() async {
-    final response = await http.get(Uri.parse('$baseUrl/tags'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/tags'),
+      headers: {'X-API-Token': ApiConfig.apiToken},
+    );
     if (response.statusCode == 200) {
       final List list = json.decode(response.body);
       return list.cast<String>();
