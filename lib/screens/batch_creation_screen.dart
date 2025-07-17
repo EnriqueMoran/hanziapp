@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../api/batch_api.dart';
+import '../device_type.dart';
 
 class BatchCreationScreen extends StatefulWidget {
   const BatchCreationScreen({Key? key}) : super(key: key);
@@ -72,8 +73,7 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
     Navigator.pop(context);
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBrowserLayout(BuildContext context) {
     final percentButtons = [
       for (final p in _percentages)
         Column(
@@ -141,5 +141,23 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildTabletLayout(BuildContext context) => _buildBrowserLayout(context);
+
+  Widget _buildSmartphoneLayout(BuildContext context) =>
+      _buildBrowserLayout(context);
+
+  @override
+  Widget build(BuildContext context) {
+    switch (DeviceConfig.deviceType) {
+      case DeviceType.tablet:
+        return _buildTabletLayout(context);
+      case DeviceType.smartphone:
+        return _buildSmartphoneLayout(context);
+      case DeviceType.browser:
+      default:
+        return _buildBrowserLayout(context);
+    }
   }
 }

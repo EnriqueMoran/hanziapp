@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../ui_scale.dart';
+import '../device_type.dart';
 
 class DeleteCharacterScreen extends StatefulWidget {
   const DeleteCharacterScreen({Key? key}) : super(key: key);
@@ -100,8 +101,7 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBrowserLayout(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Delete Characters')),
       body: Padding(
@@ -139,5 +139,23 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildTabletLayout(BuildContext context) => _buildBrowserLayout(context);
+
+  Widget _buildSmartphoneLayout(BuildContext context) =>
+      _buildBrowserLayout(context);
+
+  @override
+  Widget build(BuildContext context) {
+    switch (DeviceConfig.deviceType) {
+      case DeviceType.tablet:
+        return _buildTabletLayout(context);
+      case DeviceType.smartphone:
+        return _buildSmartphoneLayout(context);
+      case DeviceType.browser:
+      default:
+        return _buildBrowserLayout(context);
+    }
   }
 }

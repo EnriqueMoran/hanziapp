@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../device_type.dart';
 import 'character_review_screen.dart';
 import 'batch_group_selection_screen.dart';
 import 'batch_creation_screen.dart';
@@ -7,8 +9,37 @@ import 'group_edit_screen.dart';
 import 'add_character_screen.dart';
 import 'delete_character_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+
+  Widget _deviceSelector() {
+    return Row(
+      children: [
+        const Text('Device:'),
+        const SizedBox(width: 8),
+        DropdownButton<DeviceType>(
+          value: DeviceConfig.deviceType,
+          items: const [
+            DropdownMenuItem(
+                value: DeviceType.browser, child: Text('Browser')),
+            DropdownMenuItem(
+                value: DeviceType.tablet, child: Text('Tablet')),
+            DropdownMenuItem(
+                value: DeviceType.smartphone, child: Text('Smartphone')),
+          ],
+          onChanged: (v) {
+            if (v != null) setState(() => DeviceConfig.deviceType = v);
+          },
+        ),
+      ],
+    );
+  }
 
   /// Creates a full-width button that navigates to a new screen.
   Widget _fullWidthButton(BuildContext context, String label, Widget target) {
@@ -69,6 +100,8 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            _deviceSelector(),
+            const SizedBox(height: 16),
             _fullWidthButton(context, 'Review full vocabulary',
                 CharacterReviewScreen()),
             _fullWidthButton(context, 'Review batches and groups',

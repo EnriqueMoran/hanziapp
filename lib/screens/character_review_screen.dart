@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
 import '../ui_scale.dart';
+import '../device_type.dart';
 import 'dart:async';
 import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
 as mlkit;
@@ -399,8 +400,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     return characters[i].character;
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBrowserLayout(BuildContext context) {
     final screenW = MediaQuery.of(context).size.width;
     final screenH = MediaQuery.of(context).size.height;
     final exampleHeight = screenH * 0.36;
@@ -733,6 +733,24 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildTabletLayout(BuildContext context) => _buildBrowserLayout(context);
+
+  Widget _buildSmartphoneLayout(BuildContext context) =>
+      _buildBrowserLayout(context);
+
+  @override
+  Widget build(BuildContext context) {
+    switch (DeviceConfig.deviceType) {
+      case DeviceType.tablet:
+        return _buildTabletLayout(context);
+      case DeviceType.smartphone:
+        return _buildSmartphoneLayout(context);
+      case DeviceType.browser:
+      default:
+        return _buildBrowserLayout(context);
+    }
   }
 
   Widget _buildNeighbor(String char, double size) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
 import '../ui_scale.dart';
+import '../device_type.dart';
 import 'package:reorderables/reorderables.dart';
 
 class GroupEditScreen extends StatefulWidget {
@@ -121,8 +122,7 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBrowserLayout(BuildContext context) {
     Widget content = const SizedBox.shrink();
     if (_selectedId != null) {
       content = SingleChildScrollView(
@@ -185,6 +185,24 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildTabletLayout(BuildContext context) => _buildBrowserLayout(context);
+
+  Widget _buildSmartphoneLayout(BuildContext context) =>
+      _buildBrowserLayout(context);
+
+  @override
+  Widget build(BuildContext context) {
+    switch (DeviceConfig.deviceType) {
+      case DeviceType.tablet:
+        return _buildTabletLayout(context);
+      case DeviceType.smartphone:
+        return _buildSmartphoneLayout(context);
+      case DeviceType.browser:
+      default:
+        return _buildBrowserLayout(context);
+    }
   }
 
   Widget _buildTile(GroupEntry entry) {

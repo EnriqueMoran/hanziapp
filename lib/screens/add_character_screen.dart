@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/character_api.dart';
 import '../ui_scale.dart';
+import '../device_type.dart';
 
 class AddCharacterScreen extends StatefulWidget {
   const AddCharacterScreen({Key? key}) : super(key: key);
@@ -117,10 +118,7 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
+  Widget _buildBrowserLayout(BuildContext context) {
     final previewBox = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -271,5 +269,23 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildTabletLayout(BuildContext context) => _buildBrowserLayout(context);
+
+  Widget _buildSmartphoneLayout(BuildContext context) =>
+      _buildBrowserLayout(context);
+
+  @override
+  Widget build(BuildContext context) {
+    switch (DeviceConfig.deviceType) {
+      case DeviceType.tablet:
+        return _buildTabletLayout(context);
+      case DeviceType.smartphone:
+        return _buildSmartphoneLayout(context);
+      case DeviceType.browser:
+      default:
+        return _buildBrowserLayout(context);
+    }
   }
 }

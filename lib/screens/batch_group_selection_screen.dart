@@ -3,6 +3,7 @@ import '../api/batch_api.dart';
 import '../api/group_api.dart';
 import '../api/character_api.dart';
 import '../api/settings_api.dart';
+import '../device_type.dart';
 import 'character_review_screen.dart';
 
 class BatchGroupSelectionScreen extends StatefulWidget {
@@ -153,8 +154,7 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBrowserLayout(BuildContext context) {
     final batchDropdown = DropdownButton<Batch>(
       value: _selectedBatch,
       hint: const Text('Select batch'),
@@ -271,5 +271,23 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildTabletLayout(BuildContext context) => _buildBrowserLayout(context);
+
+  Widget _buildSmartphoneLayout(BuildContext context) =>
+      _buildBrowserLayout(context);
+
+  @override
+  Widget build(BuildContext context) {
+    switch (DeviceConfig.deviceType) {
+      case DeviceType.tablet:
+        return _buildTabletLayout(context);
+      case DeviceType.smartphone:
+        return _buildSmartphoneLayout(context);
+      case DeviceType.browser:
+      default:
+        return _buildBrowserLayout(context);
+    }
   }
 }
