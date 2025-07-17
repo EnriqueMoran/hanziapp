@@ -38,7 +38,7 @@ to a different host.
 
 ## Backend API
 
-A simple Flask service under `backend/` exposes the characters stored in a SQLite database. Build and run it with Docker Compose:
+A simple Flask service under `backend/` exposes the characters stored in a SQLite database. Build and run it with Docker Compose. The container now uses **Gunicorn** to serve the Flask app in production mode:
 
 ```bash
 docker-compose up --build
