@@ -80,6 +80,7 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
           children: [
             ElevatedButton(
               onPressed: () => _setFromPercent(p),
+              style: buttonStyle(),
               child: Text('$p%'),
             ),
             const SizedBox(height: 4),
@@ -125,6 +126,7 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
+                    style: buttonStyle(),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -132,6 +134,7 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _createBatches,
+                    style: buttonStyle(),
                     child: const Text('Create'),
                   ),
                 ),

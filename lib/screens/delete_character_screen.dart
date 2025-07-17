@@ -123,6 +123,7 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
+                    style: buttonStyle(),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -130,6 +131,7 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _confirmDelete,
+                    style: buttonStyle(),
                     child: const Text('Delete'),
                   ),
                 ),
