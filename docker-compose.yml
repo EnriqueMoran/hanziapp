@@ -10,3 +10,12 @@ services:
       - API_TOKEN=changeme
       - DB_PATH=/data/hanzi.db
 
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
