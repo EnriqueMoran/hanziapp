@@ -602,123 +602,84 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               ],
             ),
           ),
-          if (showTouchPanel)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                  SizedBox(
-                    height: drawingHeight,
-                    width: contentWidth,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              editing
-                                  ? TextField(
-                                  controller: levelController,
-                                  decoration:
-                                  InputDecoration(labelText: 'Level'))
-                                  : SelectableText(
-                                  'Level: ${current?.level ?? ''}'),
-                              SizedBox(height: 4),
-                              editing
-                                  ? Row(
-                                children: [
-                                  Expanded(
-                                      child: TextField(
-                                          controller: tagsController,
-                                          decoration: InputDecoration(
-                                              labelText: 'Tags'))),
-                                  IconButton(
-                                      onPressed: chooseTag,
-                                      icon: Icon(Icons.list)),
-                                ],
-                              )
-                                  : SelectableText(
-                                  'Tags: ${current?.tags.join(', ')}'),
-                              SizedBox(height: 8),
-                              SelectableText('Batch/Group: $batchLabel',
-                                  style:
-                                  TextStyle(fontSize: UiScale.smallFont)),
-                            ],
-                          ),
-                        ),
-                        SizedBox(
-                          width: panelWidth,
-                          child: GestureDetector(
-                            onPanStart: (details) {
-                              setState(
-                                      () => points.add(details.localPosition));
-                              strokePoints = [];
-                              strokePoints.add(mlkit.StrokePoint(
-                                  x: details.localPosition.dx,
-                                  y: details.localPosition.dy,
-                                  t: DateTime.now()
-                                      .millisecondsSinceEpoch));
-                              ink.strokes
-                                  .add(mlkit.Stroke()..points = List.of(strokePoints));
-                            },
-                            onPanUpdate: (details) {
-                              setState(
-                                      () => points.add(details.localPosition));
-                              strokePoints.add(mlkit.StrokePoint(
-                                  x: details.localPosition.dx,
-                                  y: details.localPosition.dy,
-                                  t: DateTime.now()
-                                      .millisecondsSinceEpoch));
-                              ink.strokes.last.points =
-                                  List.of(strokePoints);
-                              queueRecognition();
-                            },
-                            onPanEnd: (_) {
-                              setState(() => points.add(null));
-                              strokePoints = [];
-                              queueRecognition();
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                  color: Colors.grey[800],
-                                  border:
-                                  Border.all(color: Colors.white24),
-                                  borderRadius: BorderRadius.circular(12)),
-                              child: CustomPaint(
-                                  painter: _DrawingPainter(points: points),
-                                  child: SizedBox.expand()),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (showTouchPanel)
+                    SizedBox(
+                      height: drawingHeight,
+                      width: contentWidth,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _infoColumn()),
+                          SizedBox(
+                            width: panelWidth,
+                            child: GestureDetector(
+                              onPanStart: (details) {
+                                setState(() => points.add(details.localPosition));
+                                strokePoints = [];
+                                strokePoints.add(mlkit.StrokePoint(
+                                    x: details.localPosition.dx,
+                                    y: details.localPosition.dy,
+                                    t: DateTime.now().millisecondsSinceEpoch));
+                                ink.strokes.add(mlkit.Stroke()..points = List.of(strokePoints));
+                              },
+                              onPanUpdate: (details) {
+                                setState(() => points.add(details.localPosition));
+                                strokePoints.add(mlkit.StrokePoint(
+                                    x: details.localPosition.dx,
+                                    y: details.localPosition.dy,
+                                    t: DateTime.now().millisecondsSinceEpoch));
+                                ink.strokes.last.points = List.of(strokePoints);
+                                queueRecognition();
+                              },
+                              onPanEnd: (_) {
+                                setState(() => points.add(null));
+                                strokePoints = [];
+                                queueRecognition();
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                    color: Colors.grey[800],
+                                    border: Border.all(color: Colors.white24),
+                                    borderRadius: BorderRadius.circular(12)),
+                                child: CustomPaint(
+                                    painter: _DrawingPainter(points: points),
+                                    child: SizedBox.expand()),
+                              ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 8.0),
-                            child: Text(
-                              !modelReady
-                                  ? 'Recognized drawing: $recognizerStatus'
-                                  : 'Recognized drawing: ${recognizedText.isEmpty ? recognizerStatus : recognizedText}${recognizedScore != null ? ' (${(recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
-                              style: TextStyle(
-                                  fontSize: UiScale.smallFont),
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 8.0),
+                              child: Text(
+                                !modelReady
+                                    ? 'Recognized drawing: $recognizerStatus'
+                                    : 'Recognized drawing: ${recognizedText.isEmpty ? recognizerStatus : recognizedText}${recognizedScore != null ? ' (${(recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
+                                style: TextStyle(fontSize: UiScale.smallFont),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 16),
+                        ],
+                      ),
+                    )
+                  else
+                    Align(alignment: Alignment.centerLeft, child: _infoColumn()),
+                  SizedBox(height: showTouchPanel ? 16 : 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ElevatedButton(
-                          onPressed: clearDrawing,
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red),
-                          child: Text('DELETE')),
-                      SizedBox(width: 8),
+                      if (showTouchPanel)
+                        ElevatedButton(
+                            onPressed: clearDrawing,
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                            child: Text('DELETE')),
+                      if (showTouchPanel) SizedBox(width: 8),
                       ElevatedButton(
                           onPressed: goToPreviousCharacter,
                           child: Text('PREVIOUS')),
@@ -757,6 +718,36 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       default:
         return _buildBrowserLayout(context);
     }
+  }
+
+  Widget _infoColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        editing
+            ? TextField(
+                controller: levelController,
+                decoration: InputDecoration(labelText: 'Level'))
+            : SelectableText('Level: ${current?.level ?? ''}'),
+        SizedBox(height: 4),
+        editing
+            ? Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: tagsController,
+                      decoration: InputDecoration(labelText: 'Tags'),
+                    ),
+                  ),
+                  IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
+                ],
+              )
+            : SelectableText('Tags: ${current?.tags.join(', ')}'),
+        SizedBox(height: 8),
+        SelectableText('Batch/Group: $batchLabel',
+            style: TextStyle(fontSize: UiScale.smallFont)),
+      ],
+    );
   }
 
   Widget _buildNeighbor(String char, double size) {
