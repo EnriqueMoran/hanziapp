@@ -20,7 +20,7 @@ class LayoutConfig {
       case DeviceType.browser:
         return const LayoutConfig(
           showTouchPanel: false,
-          exampleHeightRatio: 0.36,
+          exampleHeightRatio: 0.46,
           drawingHeightRatio: 0.20,
           panelWidthRatio: 0.5,
         );
@@ -35,9 +35,9 @@ class LayoutConfig {
       default:
         return const LayoutConfig(
           showTouchPanel: true,
-          exampleHeightRatio: 0.36,
+          exampleHeightRatio: 0.26,
           drawingHeightRatio: 0.20,
-          panelWidthRatio: 0.5,
+          panelWidthRatio: 0.55,
         );
     }
   }
