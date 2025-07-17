@@ -408,6 +408,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final contentWidth = screenW - 48;
     final panelWidth = contentWidth * layout.panelWidthRatio;
 
+    final showAllToggles = DeviceConfig.deviceType != DeviceType.smartphone;
     final toggles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -415,9 +416,15 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           setState(() => autoSound = v);
           if (v && hasAudio) playAudio();
         }),
-        _buildToggle('Show Hanzi', showHanzi, (v) => setState(() => showHanzi = v)),
-        _buildToggle('Show Pinyin', showPinyin, (v) => setState(() => showPinyin = v)),
-        _buildToggle('Show Translation', showTranslation, (v) => setState(() => showTranslation = v)),
+        if (showAllToggles)
+          _buildToggle('Show Hanzi', showHanzi,
+              (v) => setState(() => showHanzi = v)),
+        if (showAllToggles)
+          _buildToggle('Show Pinyin', showPinyin,
+              (v) => setState(() => showPinyin = v)),
+        if (showAllToggles)
+          _buildToggle('Show Translation', showTranslation,
+              (v) => setState(() => showTranslation = v)),
       ],
     );
 
