@@ -582,8 +582,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 SizedBox(height: 24),
                 exampleArea,
                 SizedBox(height: 16),
-                // Only show delete/edit buttons on tablet/browser, not on smartphone
-                if (DeviceConfig.deviceType != DeviceType.smartphone)
+                if (DeviceConfig.deviceType == DeviceType.browser)
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Row(

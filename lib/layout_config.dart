@@ -27,9 +27,9 @@ class LayoutConfig {
       case DeviceType.tablet:
         return const LayoutConfig(
           showTouchPanel: true,
-          exampleHeightRatio: 0.36,
-          drawingHeightRatio: 0.20,
-          panelWidthRatio: 0.5,
+          exampleHeightRatio: 0.376,
+          drawingHeightRatio: 0.25,
+          panelWidthRatio: 0.55,
         );
       case DeviceType.smartphone:
       default:
