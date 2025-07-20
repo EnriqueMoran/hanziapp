@@ -6,13 +6,14 @@ import '../ui_scale.dart';
 import '../layout_config.dart';
 import 'dart:async';
 import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
-as mlkit;
+    as mlkit;
 
 class CharacterReviewScreen extends StatefulWidget {
   final List<Character>? initialCharacters;
   final String? batchValue;
   final int? batchId;
   final int? groupId;
+  final String? level;
 
   const CharacterReviewScreen({
     Key? key,
@@ -20,6 +21,7 @@ class CharacterReviewScreen extends StatefulWidget {
     this.batchValue,
     this.batchId,
     this.groupId,
+    this.level,
   }) : super(key: key);
 
   @override
@@ -49,7 +51,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   List<Offset?> points = [];
 
   final mlkit.DigitalInkRecognizerModelManager modelManager =
-  mlkit.DigitalInkRecognizerModelManager();
+      mlkit.DigitalInkRecognizerModelManager();
   late final mlkit.DigitalInkRecognizer inkRecognizer;
   final mlkit.Ink ink = mlkit.Ink();
   List<mlkit.StrokePoint> strokePoints = [];
@@ -64,6 +66,17 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   Character? get current =>
       characters.isEmpty ? null : characters[currentIndex];
+
+  String get _storageKey {
+    if (widget.batchId != null) {
+      return 'last_batch_${widget.batchId}_character';
+    } else if (widget.groupId != null) {
+      return 'last_group_${widget.groupId}_character';
+    } else if (widget.level != null && widget.level!.isNotEmpty) {
+      return 'last_level_${widget.level}_character';
+    }
+    return 'last_reviewed_character';
+  }
 
   static const StrutStyle fixedStrut = StrutStyle(
     forceStrutHeight: true,
@@ -209,10 +222,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   void queueRecognition() {
     recognizeDebounce?.cancel();
-    recognizeDebounce = Timer(
-      const Duration(milliseconds: 300),
-      recognizeInk,
-    );
+    recognizeDebounce = Timer(const Duration(milliseconds: 300), recognizeInk);
   }
 
   Future<void> recognizeInk() async {
@@ -338,24 +348,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   Future<void> loadInitialIndex() async {
     int start = 0;
-    if (widget.batchId != null) {
-      final id = await SettingsApi.getInt('last_batch_character');
-      if (id != null) {
-        final idx = characters.indexWhere((c) => c.id == id);
-        if (idx >= 0) start = idx;
-      }
-    } else if (widget.groupId != null) {
-      final id = await SettingsApi.getInt('last_group_character');
-      if (id != null) {
-        final idx = characters.indexWhere((c) => c.id == id);
-        if (idx >= 0) start = idx;
-      }
-    } else {
-      final id = await SettingsApi.getInt('last_reviewed_character');
-      if (id != null) {
-        final idx = characters.indexWhere((c) => c.id == id);
-        if (idx >= 0) start = idx;
-      }
+    final id = await SettingsApi.getInt(_storageKey);
+    if (id != null) {
+      final idx = characters.indexWhere((c) => c.id == id);
+      if (idx >= 0) start = idx;
     }
     if (!mounted) return;
     setState(() => currentIndex = start);
@@ -367,23 +363,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   }
 
   void updateLastCharacter(int id) {
-    if (widget.batchId != null) {
-      SettingsApi.setInt('last_batch_character', id);
-    } else if (widget.groupId != null) {
-      SettingsApi.setInt('last_group_character', id);
-    } else {
-      SettingsApi.setInt('last_reviewed_character', id);
-    }
+    SettingsApi.setInt(_storageKey, id);
   }
 
   void restartReview() {
-    if (widget.batchId != null) {
-      SettingsApi.setInt('last_batch_character', null);
-    } else if (widget.groupId != null) {
-      SettingsApi.setInt('last_group_character', null);
-    } else {
-      SettingsApi.setInt('last_reviewed_character', null);
-    }
+    SettingsApi.setInt(_storageKey, null);
     setState(() {
       currentIndex = 0;
       points = [];
@@ -417,14 +401,23 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           if (v && hasAudio) playAudio();
         }),
         if (showAllToggles)
-          _buildToggle('Show Hanzi', showHanzi,
-                  (v) => setState(() => showHanzi = v)),
+          _buildToggle(
+            'Show Hanzi',
+            showHanzi,
+            (v) => setState(() => showHanzi = v),
+          ),
         if (showAllToggles)
-          _buildToggle('Show Pinyin', showPinyin,
-                  (v) => setState(() => showPinyin = v)),
+          _buildToggle(
+            'Show Pinyin',
+            showPinyin,
+            (v) => setState(() => showPinyin = v),
+          ),
         if (showAllToggles)
-          _buildToggle('Show Translation', showTranslation,
-                  (v) => setState(() => showTranslation = v)),
+          _buildToggle(
+            'Show Translation',
+            showTranslation,
+            (v) => setState(() => showTranslation = v),
+          ),
       ],
     );
 
@@ -463,36 +456,36 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         if (editing || showPinyin)
           editing
               ? TextField(
-            controller: pinyinController,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: UiScale.mediumFont,
-              fontFamily: 'NotoSans',
-            ),
-          )
+                  controller: pinyinController,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: UiScale.mediumFont,
+                    fontFamily: 'NotoSans',
+                  ),
+                )
               : SelectableText(
-            current?.pinyin ?? '',
-            strutStyle: fixedStrut,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: UiScale.mediumFont,
-              fontFamily: 'NotoSans',
-            ),
-          ),
+                  current?.pinyin ?? '',
+                  strutStyle: fixedStrut,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: UiScale.mediumFont,
+                    fontFamily: 'NotoSans',
+                  ),
+                ),
         SizedBox(height: 6),
         if (editing || showTranslation)
           editing
               ? TextField(
-            controller: meaningController,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: UiScale.smallFont),
-          )
+                  controller: meaningController,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: UiScale.smallFont),
+                )
               : SelectableText(
-            current?.meaning ?? '',
-            strutStyle: fixedStrut,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: UiScale.smallFont),
-          ),
+                  current?.meaning ?? '',
+                  strutStyle: fixedStrut,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: UiScale.smallFont),
+                ),
       ],
     );
 
@@ -502,7 +495,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         ElevatedButton(onPressed: restartReview, child: Text('RESTART')),
         SizedBox(height: 8),
         ElevatedButton(
-            onPressed: hasAudio ? playAudio : null, child: Text('LISTEN')),
+          onPressed: hasAudio ? playAudio : null,
+          child: Text('LISTEN'),
+        ),
       ],
     );
 
@@ -522,17 +517,17 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               ),
               child: editing
                   ? TextField(
-                controller: detailsController,
-                maxLines: null,
-                decoration: InputDecoration(border: InputBorder.none),
-                style: TextStyle(fontSize: UiScale.detailFont),
-              )
+                      controller: detailsController,
+                      maxLines: null,
+                      decoration: InputDecoration(border: InputBorder.none),
+                      style: TextStyle(fontSize: UiScale.detailFont),
+                    )
                   : SingleChildScrollView(
-                child: SelectableText(
-                  current?.other ?? '',
-                  style: TextStyle(fontSize: UiScale.detailFont),
-                ),
-              ),
+                      child: SelectableText(
+                        current?.other ?? '',
+                        style: TextStyle(fontSize: UiScale.detailFont),
+                      ),
+                    ),
             ),
           ),
           Expanded(
@@ -546,17 +541,17 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               ),
               child: editing
                   ? TextField(
-                controller: examplesController,
-                maxLines: null,
-                decoration: InputDecoration(border: InputBorder.none),
-                style: TextStyle(fontSize: UiScale.detailFont),
-              )
+                      controller: examplesController,
+                      maxLines: null,
+                      decoration: InputDecoration(border: InputBorder.none),
+                      style: TextStyle(fontSize: UiScale.detailFont),
+                    )
                   : SingleChildScrollView(
-                child: SelectableText(
-                  current?.examples ?? '',
-                  style: TextStyle(fontSize: UiScale.detailFont),
-                ),
-              ),
+                      child: SelectableText(
+                        current?.examples ?? '',
+                        style: TextStyle(fontSize: UiScale.detailFont),
+                      ),
+                    ),
             ),
           ),
         ],
@@ -591,32 +586,34 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                         ElevatedButton(
                           onPressed: deleteCharacter,
                           style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red),
+                            backgroundColor: Colors.red,
+                          ),
                           child: Text('DELETE CHARACTER'),
                         ),
                         SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: toggleEdit,
                           style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                              editing ? Colors.green : null),
+                            backgroundColor: editing ? Colors.green : null,
+                          ),
                           child: Text(
-                              editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
+                            editing ? 'SAVE CHANGES' : 'EDIT CHARACTER',
+                          ),
                         ),
                         if (editing) ...[
                           SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: cancelEdit,
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red),
+                              backgroundColor: Colors.red,
+                            ),
                             child: Text('CANCEL CHANGES'),
                           ),
                         ],
                       ],
                     ),
                   ),
-                if (layout.showTouchPanel)
-                  SizedBox(height: drawingHeight + 56),
+                if (layout.showTouchPanel) SizedBox(height: drawingHeight + 56),
               ],
             ),
           ),
@@ -639,27 +636,34 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                             width: panelWidth,
                             child: GestureDetector(
                               onPanStart: (details) {
-                                setState(() =>
-                                    points.add(details.localPosition));
+                                setState(
+                                  () => points.add(details.localPosition),
+                                );
                                 strokePoints = [];
-                                strokePoints.add(mlkit.StrokePoint(
+                                strokePoints.add(
+                                  mlkit.StrokePoint(
                                     x: details.localPosition.dx,
                                     y: details.localPosition.dy,
-                                    t: DateTime.now()
-                                        .millisecondsSinceEpoch));
-                                ink.strokes
-                                    .add(mlkit.Stroke()..points = List.of(strokePoints));
+                                    t: DateTime.now().millisecondsSinceEpoch,
+                                  ),
+                                );
+                                ink.strokes.add(
+                                  mlkit.Stroke()
+                                    ..points = List.of(strokePoints),
+                                );
                               },
                               onPanUpdate: (details) {
-                                setState(() =>
-                                    points.add(details.localPosition));
-                                strokePoints.add(mlkit.StrokePoint(
+                                setState(
+                                  () => points.add(details.localPosition),
+                                );
+                                strokePoints.add(
+                                  mlkit.StrokePoint(
                                     x: details.localPosition.dx,
                                     y: details.localPosition.dy,
-                                    t: DateTime.now()
-                                        .millisecondsSinceEpoch));
-                                ink.strokes.last.points =
-                                    List.of(strokePoints);
+                                    t: DateTime.now().millisecondsSinceEpoch,
+                                  ),
+                                );
+                                ink.strokes.last.points = List.of(strokePoints);
                                 queueRecognition();
                               },
                               onPanEnd: (_) {
@@ -669,12 +673,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                               },
                               child: Container(
                                 decoration: BoxDecoration(
-                                    color: Colors.grey[800],
-                                    border: Border.all(color: Colors.white24),
-                                    borderRadius: BorderRadius.circular(12)),
+                                  color: Colors.grey[800],
+                                  border: Border.all(color: Colors.white24),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 child: CustomPaint(
-                                    painter: _DrawingPainter(points: points),
-                                    child: SizedBox.expand()),
+                                  painter: _DrawingPainter(points: points),
+                                  child: SizedBox.expand(),
+                                ),
                               ),
                             ),
                           ),
@@ -685,8 +691,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                                 !modelReady
                                     ? 'Recognized drawing: $recognizerStatus'
                                     : 'Recognized drawing: ${recognizedText.isEmpty ? recognizerStatus : recognizedText}${recognizedScore != null ? ' (${(recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
-                                style:
-                                TextStyle(fontSize: UiScale.smallFont),
+                                style: TextStyle(fontSize: UiScale.smallFont),
                               ),
                             ),
                           ),
@@ -694,24 +699,32 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       ),
                     )
                   else
-                    Align(alignment: Alignment.centerLeft, child: _infoColumn()),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _infoColumn(),
+                    ),
                   SizedBox(height: layout.showTouchPanel ? 16 : 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (layout.showTouchPanel)
                         ElevatedButton(
-                            onPressed: clearDrawing,
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red),
-                            child: Text('DELETE')),
+                          onPressed: clearDrawing,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                          child: Text('DELETE'),
+                        ),
                       if (layout.showTouchPanel) SizedBox(width: 8),
                       ElevatedButton(
-                          onPressed: goToPreviousCharacter,
-                          child: Text('PREVIOUS')),
+                        onPressed: goToPreviousCharacter,
+                        child: Text('PREVIOUS'),
+                      ),
                       SizedBox(width: 8),
                       ElevatedButton(
-                          onPressed: goToNextCharacter, child: Text('NEXT')),
+                        onPressed: goToNextCharacter,
+                        child: Text('NEXT'),
+                      ),
                     ],
                   ),
                 ],
@@ -751,37 +764,48 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       children: [
         editing
             ? TextField(
-            controller: levelController,
-            decoration: InputDecoration(labelText: 'Level'))
+                controller: levelController,
+                decoration: InputDecoration(labelText: 'Level'),
+              )
             : SelectableText('Level: ${current?.level ?? ''}'),
         SizedBox(height: 4),
         editing
             ? Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: tagsController,
-                decoration: InputDecoration(labelText: 'Tags'),
-              ),
-            ),
-            IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
-          ],
-        )
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: tagsController,
+                      decoration: InputDecoration(labelText: 'Tags'),
+                    ),
+                  ),
+                  IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
+                ],
+              )
             : SelectableText('Tags: ${current?.tags.join(', ')}'),
         SizedBox(height: 8),
-        SelectableText('Batch/Group: $batchLabel',
-            style: TextStyle(fontSize: UiScale.smallFont)),
+        SelectableText(
+          'Batch/Group: $batchLabel',
+          style: TextStyle(fontSize: UiScale.smallFont),
+        ),
       ],
     );
   }
 
   Widget _buildNeighbor(String char, double size) {
-    return SelectableText(showHanzi ? char : '',
-        textAlign: TextAlign.center, style: TextStyle(fontSize: size));
+    return SelectableText(
+      showHanzi ? char : '',
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: size),
+    );
   }
 
   Widget _buildToggle(String label, bool value, ValueChanged<bool> onChanged) {
-    return Row(children: [Text(label), Switch(value: value, onChanged: onChanged)]);
+    return Row(
+      children: [
+        Text(label),
+        Switch(value: value, onChanged: onChanged),
+      ],
+    );
   }
 }
 
