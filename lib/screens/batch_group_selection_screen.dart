@@ -149,6 +149,8 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
           batchValue: label,
           batchId: batchId,
           groupId: groupId,
+          level: _filterType == 'level' ? _selectedLevel : null,
+          tag: _filterType == 'tag' ? _selectedTag : null,
         ),
       ),
     );
@@ -273,7 +275,8 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
     );
   }
 
-  Widget _buildTabletLayout(BuildContext context) => _buildBrowserLayout(context);
+  Widget _buildTabletLayout(BuildContext context) =>
+      _buildBrowserLayout(context);
 
   Widget _buildSmartphoneLayout(BuildContext context) =>
       _buildBrowserLayout(context);
