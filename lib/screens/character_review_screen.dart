@@ -14,6 +14,7 @@ class CharacterReviewScreen extends StatefulWidget {
   final int? batchId;
   final int? groupId;
   final String? level;
+  final String? tag;
 
   const CharacterReviewScreen({
     Key? key,
@@ -22,6 +23,7 @@ class CharacterReviewScreen extends StatefulWidget {
     this.batchId,
     this.groupId,
     this.level,
+    this.tag,
   }) : super(key: key);
 
   @override
@@ -72,6 +74,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       return 'last_batch_${widget.batchId}_character';
     } else if (widget.groupId != null) {
       return 'last_group_${widget.groupId}_character';
+    } else if (widget.tag != null && widget.tag!.isNotEmpty) {
+      return 'last_tag_${widget.tag}_character';
     } else if (widget.level != null && widget.level!.isNotEmpty) {
       return 'last_level_${widget.level}_character';
     }

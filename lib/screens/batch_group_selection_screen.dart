@@ -150,6 +150,7 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
           batchId: batchId,
           groupId: groupId,
           level: _filterType == 'level' ? _selectedLevel : null,
+          tag: _filterType == 'tag' ? _selectedTag : null,
         ),
       ),
     );
