@@ -84,6 +84,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     return 'last_reviewed_character';
   }
 
+  String get _reviewType {
+    if (widget.groupId != null) return 'group';
+    if (widget.batchId != null) return 'batch';
+    if (widget.tag != null && widget.tag!.isNotEmpty) return 'tag';
+    if (widget.level != null && widget.level!.isNotEmpty) return 'level';
+    return 'vocabulary';
+  }
+
   static const StrutStyle fixedStrut = StrutStyle(
     forceStrutHeight: true,
     height: 1.0,
@@ -819,6 +827,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         SizedBox(height: 8),
         SelectableText(
           'Batch/Group: $batchLabel',
+          style: TextStyle(fontSize: UiScale.smallFont),
+        ),
+        SizedBox(height: 4),
+        SelectableText(
+          'Characters left in this $_reviewType: ${characters.length - currentIndex - 1}',
           style: TextStyle(fontSize: UiScale.smallFont),
         ),
       ],
