@@ -20,7 +20,9 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
   List<Character> _allCharacters = [];
   List<Character> _characters = [];
   List<String> _levels = [];
+  List<String> _tags = [];
   String? _selectedLevel;
+  String? _selectedTag;
 
   int get _total => _characters.length;
   int get _batchCount {
@@ -44,7 +46,11 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
         _characters = list;
         _levels = levels;
         _selectedLevel = null;
+        _selectedTag = null;
       });
+    });
+    CharacterApi.fetchTags().then((tags) {
+      if (mounted) setState(() => _tags = tags);
     });
   }
 
@@ -62,14 +68,28 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
     });
   }
 
+  void _updateCharacters() {
+    var list = _allCharacters;
+    if (_selectedLevel != null) {
+      list = list.where((c) => c.level == _selectedLevel).toList();
+    }
+    if (_selectedTag != null) {
+      list = list.where((c) => c.tags.contains(_selectedTag)).toList();
+    }
+    _characters = list;
+  }
+
   void _applyLevel(String? level) {
     setState(() {
       _selectedLevel = level;
-      if (level == null) {
-        _characters = _allCharacters;
-      } else {
-        _characters = _allCharacters.where((c) => c.level == level).toList();
-      }
+      _updateCharacters();
+    });
+  }
+
+  void _applyTag(String? tag) {
+    setState(() {
+      _selectedTag = tag;
+      _updateCharacters();
     });
   }
 
@@ -133,6 +153,20 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
                   DropdownMenuItem<String?>(value: l, child: Text(l)),
               ],
               onChanged: _applyLevel,
+            ),
+            const SizedBox(height: 12),
+            DropdownButton<String?>(
+              value: _selectedTag,
+              hint: const Text('Any tag'),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Any tag'),
+                ),
+                for (final t in _tags)
+                  DropdownMenuItem<String?>(value: t, child: Text(t)),
+              ],
+              onChanged: _applyTag,
             ),
             const SizedBox(height: 12),
             Text('Total characters: $_total'),
