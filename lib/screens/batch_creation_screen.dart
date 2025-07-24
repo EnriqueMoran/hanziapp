@@ -16,7 +16,11 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
   final TextEditingController _sizeController = TextEditingController();
   final List<int> _percentages = [1, 5, 10, 15, 20];
   bool _random = true;
+
+  List<Character> _allCharacters = [];
   List<Character> _characters = [];
+  List<String> _levels = [];
+  String? _selectedLevel;
 
   int get _total => _characters.length;
   int get _batchCount {
@@ -29,7 +33,18 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
   void initState() {
     super.initState();
     CharacterApi.fetchAll().then((list) {
-      if (mounted) setState(() => _characters = list);
+      if (!mounted) return;
+      final levelsSet = <String>{};
+      for (final c in list) {
+        if (c.level.isNotEmpty) levelsSet.add(c.level);
+      }
+      final levels = levelsSet.toList()..sort();
+      setState(() {
+        _allCharacters = list;
+        _characters = list;
+        _levels = levels;
+        _selectedLevel = null;
+      });
     });
   }
 
@@ -44,6 +59,17 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
     final size = max(1, (_total * percent / 100).floor());
     setState(() {
       _sizeController.text = size.toString();
+    });
+  }
+
+  void _applyLevel(String? level) {
+    setState(() {
+      _selectedLevel = level;
+      if (level == null) {
+        _characters = _allCharacters;
+      } else {
+        _characters = _allCharacters.where((c) => c.level == level).toList();
+      }
     });
   }
 
@@ -85,7 +111,7 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
             const SizedBox(height: 4),
             Text('${(_total * p / 100).floor()}'),
           ],
-        )
+        ),
     ];
 
     return Scaffold(
@@ -95,6 +121,20 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            DropdownButton<String?>(
+              value: _selectedLevel,
+              hint: const Text('All characters'),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('All characters'),
+                ),
+                for (final l in _levels)
+                  DropdownMenuItem<String?>(value: l, child: Text(l)),
+              ],
+              onChanged: _applyLevel,
+            ),
+            const SizedBox(height: 12),
             Text('Total characters: $_total'),
             const SizedBox(height: 12),
             TextField(
@@ -143,7 +183,8 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
     );
   }
 
-  Widget _buildTabletLayout(BuildContext context) => _buildBrowserLayout(context);
+  Widget _buildTabletLayout(BuildContext context) =>
+      _buildBrowserLayout(context);
 
   Widget _buildSmartphoneLayout(BuildContext context) =>
       _buildBrowserLayout(context);
