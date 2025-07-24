@@ -26,3 +26,4 @@ docker run --rm \
 
 # 5. Build final Docker image serving with Nginx
 docker build -t hanziapp_web -f Dockerfile.web .
+
