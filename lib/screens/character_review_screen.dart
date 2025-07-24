@@ -15,6 +15,7 @@ class CharacterReviewScreen extends StatefulWidget {
   final int? groupId;
   final String? level;
   final String? tag;
+  final bool recordHistory;
 
   const CharacterReviewScreen({
     Key? key,
@@ -24,6 +25,7 @@ class CharacterReviewScreen extends StatefulWidget {
     this.groupId,
     this.level,
     this.tag,
+    this.recordHistory = true,
   }) : super(key: key);
 
   @override
@@ -106,7 +108,15 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       batchLabel = widget.batchValue != null && widget.batchValue!.isNotEmpty
           ? widget.batchValue!
           : 'None';
-      loadInitialIndex();
+      if (widget.recordHistory) {
+        loadInitialIndex();
+      } else {
+        currentIndex = 0;
+        if (characters.isNotEmpty) {
+          checkAudioAvailable();
+          if (autoSound && hasAudio) playAudio();
+        }
+      }
     } else {
       CharacterApi.fetchAll().then((list) async {
         if (!mounted) return;
@@ -121,7 +131,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           currentIndex = start;
         });
         if (characters.isNotEmpty) {
-          updateLastCharacter(characters[currentIndex].id);
+          if (widget.recordHistory) {
+            updateLastCharacter(characters[currentIndex].id);
+          }
           checkAudioAvailable();
           if (autoSound && hasAudio) playAudio();
         }
@@ -253,7 +265,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         currentIndex--;
         clearDrawing();
       });
-      updateLastCharacter(current!.id);
+      if (widget.recordHistory) {
+        updateLastCharacter(current!.id);
+      }
       checkAudioAvailable();
       if (autoSound && hasAudio) playAudio();
     }
@@ -265,7 +279,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         currentIndex++;
         clearDrawing();
       });
-      updateLastCharacter(current!.id);
+      if (widget.recordHistory) {
+        updateLastCharacter(current!.id);
+      }
       checkAudioAvailable();
       if (autoSound && hasAudio) playAudio();
     }
@@ -279,7 +295,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         currentIndex = currentIndex.clamp(0, characters.length - 1);
       });
       if (characters.isNotEmpty) {
-        updateLastCharacter(current!.id);
+        if (widget.recordHistory) {
+          updateLastCharacter(current!.id);
+        }
         checkAudioAvailable();
         if (autoSound && hasAudio) playAudio();
       }
@@ -330,7 +348,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         CharacterApi.fetchTags().then((tags) {
           if (mounted) setState(() => allTags = tags);
         });
-        updateLastCharacter(current!.id);
+        if (widget.recordHistory) {
+          updateLastCharacter(current!.id);
+        }
         editing = false;
         checkAudioAvailable();
       });
@@ -360,18 +380,24 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     if (!mounted) return;
     setState(() => currentIndex = start);
     if (characters.isNotEmpty) {
-      updateLastCharacter(characters[currentIndex].id);
+      if (widget.recordHistory) {
+        updateLastCharacter(characters[currentIndex].id);
+      }
       checkAudioAvailable();
       if (autoSound && hasAudio) playAudio();
     }
   }
 
   void updateLastCharacter(int id) {
-    SettingsApi.setInt(_storageKey, id);
+    if (widget.recordHistory) {
+      SettingsApi.setInt(_storageKey, id);
+    }
   }
 
   void restartReview() {
-    SettingsApi.setInt(_storageKey, null);
+    if (widget.recordHistory) {
+      SettingsApi.setInt(_storageKey, null);
+    }
     setState(() {
       currentIndex = 0;
       points = [];
@@ -395,6 +421,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final drawingHeight = screenH * layout.drawingHeightRatio;
     final contentWidth = screenW - 48;
     final panelWidth = contentWidth * layout.panelWidthRatio;
+    final double detailFontSize =
+        DeviceConfig.deviceType == DeviceType.tablet
+            ? UiScale.detailFont * 1.5
+            : UiScale.detailFont;
 
     final showAllToggles = DeviceConfig.deviceType != DeviceType.smartphone;
     final toggles = Column(
@@ -524,12 +554,12 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       controller: detailsController,
                       maxLines: null,
                       decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: UiScale.detailFont),
+                      style: TextStyle(fontSize: detailFontSize),
                     )
                   : SingleChildScrollView(
                       child: SelectableText(
                         current?.other ?? '',
-                        style: TextStyle(fontSize: UiScale.detailFont),
+                        style: TextStyle(fontSize: detailFontSize),
                       ),
                     ),
             ),
@@ -548,12 +578,12 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       controller: examplesController,
                       maxLines: null,
                       decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: UiScale.detailFont),
+                      style: TextStyle(fontSize: detailFontSize),
                     )
                   : SingleChildScrollView(
                       child: SelectableText(
                         current?.examples ?? '',
-                        style: TextStyle(fontSize: UiScale.detailFont),
+                        style: TextStyle(fontSize: detailFontSize),
                       ),
                     ),
             ),

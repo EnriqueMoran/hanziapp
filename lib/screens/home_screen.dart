@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../layout_config.dart';
+import '../api/character_api.dart';
 import 'character_review_screen.dart';
 import 'batch_group_selection_screen.dart';
 import 'batch_creation_screen.dart';
@@ -8,6 +9,7 @@ import 'group_creation_screen.dart';
 import 'group_edit_screen.dart';
 import 'add_character_screen.dart';
 import 'delete_character_screen.dart';
+import 'search_results_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -17,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
 
   Widget _deviceSelector() {
     return Row(
@@ -39,6 +42,58 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
+  }
+
+  Widget _searchBox() {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(
+              hintText: 'Search hanzi or translation',
+            ),
+            onSubmitted: (_) => _search(),
+          ),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton(onPressed: _search, child: const Text('Search')),
+      ],
+    );
+  }
+
+  Future<void> _search() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+    final all = await CharacterApi.fetchAll();
+    final lower = query.toLowerCase();
+    final results = all
+        .where((c) =>
+            c.character.contains(query) ||
+            c.meaning.toLowerCase().contains(lower))
+        .toList();
+    if (!mounted) return;
+    if (results.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No results found.')));
+    } else if (results.length == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CharacterReviewScreen(
+            initialCharacters: results,
+            recordHistory: false,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SearchResultsScreen(results: results),
+        ),
+      );
+    }
   }
 
   /// Creates a full-width button that navigates to a new screen.
@@ -93,6 +148,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Hanzi App')),
@@ -101,6 +162,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             _deviceSelector(),
+            const SizedBox(height: 16),
+            _searchBox(),
             const SizedBox(height: 16),
             _fullWidthButton(context, 'Review full vocabulary',
                 CharacterReviewScreen()),
