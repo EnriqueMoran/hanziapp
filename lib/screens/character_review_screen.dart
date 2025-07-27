@@ -588,8 +588,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         children: [
           Expanded(
             child: Container(
-              margin: EdgeInsets.only(right: 4),
-              padding: EdgeInsets.all(8),
+              margin: EdgeInsets.only(right: 2),
+              padding: EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
                 border: Border.all(color: Color.fromARGB(255, 36, 99, 121)),
@@ -613,8 +613,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           ),
           Expanded(
             child: Container(
-              margin: EdgeInsets.only(left: 4),
-              padding: EdgeInsets.all(8),
+              margin: EdgeInsets.only(left: 2),
+              padding: EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
                 border: Border.all(color: Color.fromARGB(255, 36, 99, 121)),
@@ -864,19 +864,33 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         editing
-            ? TextField(
-                controller: levelController,
-                decoration: InputDecoration(labelText: 'Level'),
+            ? SizedBox(
+                width: 180,
+                child: TextField(
+                  controller: levelController,
+                  decoration: InputDecoration(
+                    labelText: 'Level',
+                    isDense: true,
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  ),
+                ),
               )
             : SelectableText('Level: ${current?.level ?? ''}'),
         SizedBox(height: 4),
         editing
             ? Row(
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width: 180,
                     child: TextField(
                       controller: tagsController,
-                      decoration: InputDecoration(labelText: 'Tags'),
+                      decoration: InputDecoration(
+                        labelText: 'Tags',
+                        isDense: true,
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      ),
                     ),
                   ),
                   IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
