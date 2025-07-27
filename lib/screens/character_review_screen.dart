@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
+import '../api/group_api.dart';
 import '../api/settings_api.dart';
 import '../ui_scale.dart';
 import '../layout_config.dart';
@@ -67,6 +68,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   final AudioPlayer player = AudioPlayer();
   bool hasAudio = false;
+  List<Group> groups = [];
+  bool addingToGroup = false;
+  int? selectedGroupId;
 
   Character? get current =>
       characters.isEmpty ? null : characters[currentIndex];
@@ -110,6 +114,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     tagsController = TextEditingController();
     CharacterApi.fetchTags().then((tags) {
       if (mounted) setState(() => allTags = tags);
+    });
+    GroupApi.fetchAll().then((list) {
+      if (mounted) setState(() => groups = list);
     });
     if (widget.initialCharacters != null) {
       characters = List.of(widget.initialCharacters!);
@@ -378,6 +385,37 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     });
   }
 
+  void toggleAddToGroup() {
+    setState(() {
+      if (addingToGroup) {
+        addingToGroup = false;
+        selectedGroupId = null;
+      } else {
+        addingToGroup = true;
+      }
+    });
+  }
+
+  Future<void> applyAddToGroup() async {
+    final gid = selectedGroupId;
+    final c = current;
+    if (!addingToGroup || gid == null || c == null || groups.isEmpty) return;
+    final g = groups.firstWhere((e) => e.id == gid, orElse: () => groups.first);
+    final ids = Set<int>.from(g.characterIds)..add(c.id);
+    await GroupApi.updateGroup(gid, g.name, ids.toList());
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Character added to ${g.name}')),
+    );
+    setState(() {
+      addingToGroup = false;
+      selectedGroupId = null;
+    });
+    GroupApi.fetchAll().then((list) {
+      if (mounted) setState(() => groups = list);
+    });
+  }
+
   Future<void> loadInitialIndex() async {
     int start = 0;
     final id = await SettingsApi.getInt(_storageKey);
@@ -561,6 +599,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                   ? TextField(
                       controller: detailsController,
                       maxLines: null,
+                      expands: true,
                       decoration: InputDecoration(border: InputBorder.none),
                       style: TextStyle(fontSize: detailFontSize),
                     )
@@ -585,6 +624,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                   ? TextField(
                       controller: examplesController,
                       maxLines: null,
+                      expands: true,
                       decoration: InputDecoration(border: InputBorder.none),
                       style: TextStyle(fontSize: detailFontSize),
                     )
@@ -619,11 +659,12 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 SizedBox(height: 24),
                 exampleArea,
                 SizedBox(height: 16),
-                if (DeviceConfig.deviceType == DeviceType.browser)
+                if (DeviceConfig.deviceType != DeviceType.smartphone)
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
                       children: [
                         ElevatedButton(
                           onPressed: deleteCharacter,
@@ -632,18 +673,15 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                           ),
                           child: Text('DELETE CHARACTER'),
                         ),
-                        SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: toggleEdit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: editing ? Colors.green : null,
                           ),
-                          child: Text(
-                            editing ? 'SAVE CHANGES' : 'EDIT CHARACTER',
-                          ),
+                          child:
+                              Text(editing ? 'SAVE CHANGES' : 'EDIT CHARACTER'),
                         ),
-                        if (editing) ...[
-                          SizedBox(width: 8),
+                        if (editing)
                           ElevatedButton(
                             onPressed: cancelEdit,
                             style: ElevatedButton.styleFrom(
@@ -651,7 +689,28 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                             ),
                             child: Text('CANCEL CHANGES'),
                           ),
-                        ],
+                        ElevatedButton(
+                          onPressed: toggleAddToGroup,
+                          child:
+                              Text(addingToGroup ? 'CANCEL' : 'ADD TO GROUP'),
+                        ),
+                        if (addingToGroup)
+                          DropdownButton<int>(
+                            value: selectedGroupId,
+                            hint: Text('Select group'),
+                            items: [
+                              for (final g in groups)
+                                DropdownMenuItem(
+                                    value: g.id, child: Text(g.name)),
+                            ],
+                            onChanged: (v) => setState(() => selectedGroupId = v),
+                          ),
+                        if (addingToGroup)
+                          ElevatedButton(
+                            onPressed:
+                                selectedGroupId != null ? applyAddToGroup : null,
+                            child: Text('APPLY'),
+                          ),
                       ],
                     ),
                   ),

@@ -22,11 +22,20 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
   List<Group> _groups = [];
   int? _selectedId;
   final Map<int, List<GroupEntry>> _groupMap = {};
+  List<Character> _allCharacters = [];
+  final TextEditingController _searchController = TextEditingController();
+  List<Character> _searchResults = [];
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -43,6 +52,7 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
       map[g.id] = entries;
     }
     setState(() {
+      _allCharacters = chars;
       _groups = groups;
       _groupMap.clear();
       _groupMap.addAll(map);
@@ -62,6 +72,33 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
       final list = _currentEntries;
       final item = list.removeAt(oldIndex);
       list.insert(newIndex, item);
+    });
+  }
+
+  void _search() {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() => _searchResults = []);
+      return;
+    }
+    final lower = query.toLowerCase();
+    setState(() {
+      _searchResults = _allCharacters
+          .where((c) =>
+              c.character.contains(query) ||
+              c.meaning.toLowerCase().contains(lower))
+          .toList();
+    });
+  }
+
+  void _addCharacterToCurrent(Character c) {
+    final id = _selectedId;
+    if (id == null) return;
+    final list = _groupMap[id] ?? <GroupEntry>[];
+    if (list.any((e) => e.character.id == c.id)) return;
+    setState(() {
+      list.add(GroupEntry(c));
+      _groupMap[id] = list;
     });
   }
 
@@ -152,11 +189,37 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
                 for (final g in _groups)
                   DropdownMenuItem(value: g.id, child: Text(g.name)),
               ],
-              onChanged: (v) => setState(() => _selectedId = v),
+            onChanged: (v) => setState(() => _selectedId = v),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration:
+                      const InputDecoration(hintText: 'Search characters'),
+                  onSubmitted: (_) => _search(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(onPressed: _search, child: const Text('Search')),
+            ],
+          ),
+          if (_searchResults.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final c in _searchResults) _buildSearchTile(c),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
-            Expanded(child: content),
-            const SizedBox(height: 16),
+          ],
+          Expanded(child: content),
+          const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -231,6 +294,21 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSearchTile(Character c) {
+    return GestureDetector(
+      onTap: () => _addCharacterToCurrent(c),
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey),
+        ),
+        child: Text(c.character, style: TextStyle(fontSize: UiScale.tileFont)),
       ),
     );
   }
