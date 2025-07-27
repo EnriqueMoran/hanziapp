@@ -454,11 +454,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     if (autoSound && hasAudio) playAudio();
   }
 
-  String neighborAt(int offset) {
-    final i = currentIndex + offset;
-    if (i < 0 || i >= characters.length) return '';
-    return characters[i].character;
-  }
 
   Widget _buildLayout(BuildContext context, LayoutConfig layout) {
     final screenW = MediaQuery.of(context).size.width;
@@ -476,10 +471,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final toggles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildToggle('Auto Sound', autoSound, (v) {
-          setState(() => autoSound = v);
-          if (v && hasAudio) playAudio();
-        }),
         if (showAllToggles)
           _buildToggle(
             'Show Hanzi',
@@ -504,19 +495,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final previewBox = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildNeighbor(neighborAt(-2), UiScale.smallFont),
-            SizedBox(width: 12),
-            _buildNeighbor(neighborAt(-1), UiScale.mediumFont),
-            SizedBox(width: 24),
-            _buildNeighbor(neighborAt(1), UiScale.mediumFont),
-            SizedBox(width: 12),
-            _buildNeighbor(neighborAt(2), UiScale.smallFont),
-          ],
-        ),
-        SizedBox(height: 12),
         if (editing)
           TextField(
             controller: hanziController,
@@ -572,6 +550,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final controls = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildToggle('Auto Sound', autoSound, (v) {
+          setState(() => autoSound = v);
+          if (v && hasAudio) playAudio();
+        }),
+        SizedBox(height: 8),
         ElevatedButton(onPressed: restartReview, child: Text('RESTART')),
         SizedBox(height: 8),
         ElevatedButton(
@@ -651,7 +634,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(width: UiScale.toggleWidth, child: toggles),
+                    if (showAllToggles)
+                      SizedBox(width: UiScale.toggleWidth, child: toggles),
                     Expanded(child: Center(child: previewBox)),
                     SizedBox(width: UiScale.controlsWidth, child: controls),
                   ],
