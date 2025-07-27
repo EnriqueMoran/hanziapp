@@ -467,7 +467,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
             ? UiScale.detailFont * 1.5
             : UiScale.detailFont;
 
-    final showAllToggles = DeviceConfig.deviceType != DeviceType.smartphone;
+    // Show the visibility toggles on all devices, including smartphones
+    const showAllToggles = true;
     final toggles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
