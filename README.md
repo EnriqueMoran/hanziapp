@@ -61,7 +61,7 @@ backup scripts.
 
 ### Backup and restore
 
-Use the helper scripts in `backend/` to export or import the entire database as JSON. Run them from the host machine and point them at the database file under `db/`:
+Use the helper scripts in `backend/` to export or import the entire database as JSON. Run these commands from the project root (the parent folder of `backend/`) and point them at the database file under `db/`:
 
 ```bash
 # Export all tables to backup.json
@@ -70,8 +70,9 @@ python backend/export_data.py backup.json db/hanzi.db
 # Import all tables from a JSON file
 python backend/import_data.py backup.json db/hanzi.db
 ```
-These scripts automatically create any missing tables in the database and honor
-the `DB_PATH` environment variable to locate the SQLite file.
+The backup includes characters, batches, groups, tags and settings. These scripts automatically create any missing tables in the database and honor
+the `DB_PATH` environment variable to locate the SQLite file. Running them from
+inside `backend/` will target a different (likely empty) database file.
 
 ### Importing legacy data
 
