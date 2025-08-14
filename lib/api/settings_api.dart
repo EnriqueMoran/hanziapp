@@ -6,26 +6,34 @@ class SettingsApi {
   static const String baseUrl = ApiConfig.baseUrl;
 
   static Future<String> _getValue(String key) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/settings/$key'),
-      headers: {'X-API-Token': ApiConfig.apiToken},
-    );
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data['value'] as String? ?? '';
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/settings/$key'),
+        headers: {'X-API-Token': ApiConfig.apiToken},
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['value'] as String? ?? '';
+      }
+    } catch (_) {
+      // Ignore network errors; the caller will treat missing values as defaults.
     }
     return '';
   }
 
   static Future<void> _setValue(String key, String value) async {
-    await http.put(
-      Uri.parse('$baseUrl/settings/$key'),
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Token': ApiConfig.apiToken,
-      },
-      body: json.encode({'value': value}),
-    );
+    try {
+      await http.put(
+        Uri.parse('$baseUrl/settings/$key'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Token': ApiConfig.apiToken,
+        },
+        body: json.encode({'value': value}),
+      );
+    } catch (_) {
+      // Swallow errors when the server is unreachable.
+    }
   }
 
   static Future<int?> getInt(String key) async {
