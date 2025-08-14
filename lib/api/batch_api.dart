@@ -81,9 +81,14 @@ class BatchApi {
       });
       return;
     }
+    final ts = DateTime.now().millisecondsSinceEpoch;
     final data = [
       for (final b in batches)
-        {'name': b.name, 'characters': b.characters.join(',')},
+        {
+          'name': b.name,
+          'characters': b.characters.join(','),
+          'updated_at': ts,
+        },
     ];
     await http.post(
       Uri.parse('$baseUrl/batches'),

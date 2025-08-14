@@ -80,13 +80,18 @@ class GroupApi {
       });
       return g.id;
     }
+    final payload = {
+      'name': name,
+      'characters': characters.join(','),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    };
     final response = await http.post(
       Uri.parse('$baseUrl/groups'),
       headers: {
         'Content-Type': 'application/json',
         'X-API-Token': ApiConfig.apiToken,
       },
-      body: json.encode({'name': name, 'characters': characters.join(',')}),
+      body: json.encode(payload),
     );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);

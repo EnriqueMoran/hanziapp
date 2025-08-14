@@ -444,17 +444,23 @@ class OfflineService {
     // Characters
     progress?.call('Downloading characters', 1, totalStages);
     final remoteChars = await CharacterApi.fetchAll(forceRemote: true);
+    final charMap = {
+      for (final c in remoteChars.where((c) => c.updatedAt != null)) c.id: c
+    };
     final localChars = await getAllCharacters();
-    final charMap = {for (final c in remoteChars) c.id: c};
-    for (int i = 0; i < localChars.length; i++) {
-      final lc = localChars[i];
+    final toCheck = localChars
+        .where((c) => c.updatedAt != null || c.id <= 0)
+        .toList()
+      ..sort((a, b) => (a.updatedAt ?? 0).compareTo(b.updatedAt ?? 0));
+    for (int i = 0; i < toCheck.length; i++) {
+      final lc = toCheck[i];
       if (lc.id <= 0) {
         progress?.call(
           'Reconciling characters',
           1,
           totalStages,
           currentItem: i + 1,
-          totalItems: localChars.length,
+          totalItems: toCheck.length,
         );
         continue;
       }
@@ -483,13 +489,12 @@ class OfflineService {
         1,
         totalStages,
         currentItem: i + 1,
-        totalItems: localChars.length,
+        totalItems: toCheck.length,
       );
     }
-    final reconciledChars = charMap.values.toList();
     await _saveCharacters(
-      reconciledChars,
-      clearExisting: true,
+      charMap.values.toList(),
+      clearExisting: false,
       progress: (msg, _, __, {int? currentItem, int? totalItems}) {
         progress?.call(
           msg,
@@ -504,17 +509,23 @@ class OfflineService {
     // Groups
     progress?.call('Downloading groups', 2, totalStages);
     final remoteGroups = await GroupApi.fetchAll(forceRemote: true);
+    final groupMap = {
+      for (final g in remoteGroups.where((g) => g.updatedAt != null)) g.id: g
+    };
     final localGroups = await getAllGroups();
-    final groupMap = {for (final g in remoteGroups) g.id: g};
-    for (int i = 0; i < localGroups.length; i++) {
-      final lg = localGroups[i];
+    final gCheck = localGroups
+        .where((g) => g.updatedAt != null || g.id <= 0)
+        .toList()
+      ..sort((a, b) => (a.updatedAt ?? 0).compareTo(b.updatedAt ?? 0));
+    for (int i = 0; i < gCheck.length; i++) {
+      final lg = gCheck[i];
       if (lg.id <= 0) {
         progress?.call(
           'Reconciling groups',
           2,
           totalStages,
           currentItem: i + 1,
-          totalItems: localGroups.length,
+          totalItems: gCheck.length,
         );
         continue;
       }
@@ -538,13 +549,12 @@ class OfflineService {
         2,
         totalStages,
         currentItem: i + 1,
-        totalItems: localGroups.length,
+        totalItems: gCheck.length,
       );
     }
-    final reconciledGroups = groupMap.values.toList();
     await _saveGroups(
-      reconciledGroups,
-      clearExisting: true,
+      groupMap.values.toList(),
+      clearExisting: false,
       progress: (msg, _, __, {int? currentItem, int? totalItems}) {
         progress?.call(
           msg,
@@ -559,23 +569,28 @@ class OfflineService {
     // Batches
     progress?.call('Downloading batches', 3, totalStages);
     final remoteBatches = await BatchApi.fetchAll(forceRemote: true);
+    final batchMap = {
+      for (final b in remoteBatches.where((b) => b.updatedAt != null)) b.id: b
+    };
     final localBatches = await getAllBatches();
-    final batchMap = {for (final b in remoteBatches) b.id: b};
-    for (int i = 0; i < localBatches.length; i++) {
-      final lb = localBatches[i];
+    final bCheck = localBatches
+        .where((b) => b.updatedAt != null || b.id <= 0)
+        .toList()
+      ..sort((a, b) => (a.updatedAt ?? 0).compareTo(b.updatedAt ?? 0));
+    for (int i = 0; i < bCheck.length; i++) {
+      final lb = bCheck[i];
       if (lb.id <= 0) {
         progress?.call(
           'Reconciling batches',
           3,
           totalStages,
           currentItem: i + 1,
-          totalItems: localBatches.length,
+          totalItems: bCheck.length,
         );
         continue;
       }
       final rb = batchMap[lb.id];
       if (rb == null) {
-        // No API to create single batch; reuse saveBatches
         await BatchApi.saveBatches([lb]);
         batchMap[lb.id] = lb;
       } else if (_isLocalNewer(lb.updatedAt, rb.updatedAt)) {
@@ -587,13 +602,12 @@ class OfflineService {
         3,
         totalStages,
         currentItem: i + 1,
-        totalItems: localBatches.length,
+        totalItems: bCheck.length,
       );
     }
-    final reconciledBatches = batchMap.values.toList();
     await _saveBatches(
-      reconciledBatches,
-      clearExisting: true,
+      batchMap.values.toList(),
+      clearExisting: false,
       progress: (msg, _, __, {int? currentItem, int? totalItems}) {
         progress?.call(
           msg,

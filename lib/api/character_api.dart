@@ -162,13 +162,24 @@ class CharacterApi {
       await OfflineService.queueOperation('character_create', payload);
       return temp.id;
     }
+    final payload = Character(
+      id: c.id,
+      character: c.character,
+      pinyin: c.pinyin,
+      meaning: c.meaning,
+      level: c.level,
+      tags: c.tags,
+      other: c.other,
+      examples: c.examples,
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
+    ).toJson();
     final response = await http.post(
       Uri.parse('$baseUrl/characters'),
       headers: {
         'Content-Type': 'application/json',
         'X-API-Token': ApiConfig.apiToken,
       },
-      body: json.encode(c.toJson()),
+      body: json.encode(payload),
     );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
