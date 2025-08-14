@@ -31,7 +31,10 @@ class Character {
       pinyin: json['pinyin'] as String? ?? '',
       meaning: json['meaning'] as String? ?? '',
       level: json['level'] as String? ?? '',
-      tags: (json['tags'] as String? ?? '').split(',').where((e) => e.isNotEmpty).toList(),
+      tags: (json['tags'] as String? ?? '')
+          .split(',')
+          .where((e) => e.isNotEmpty)
+          .toList(),
       other: json['other'] as String? ?? '',
       examples: json['examples'] as String? ?? '',
     );
@@ -100,7 +103,8 @@ class CharacterApi {
 
   static Future<void> updateCharacter(Character c) async {
     if (OfflineService.isSupported && OfflineService.isOffline) {
-      await OfflineService.queueOperation('update', c);
+      await OfflineService.updateLocalCharacter(c);
+      await OfflineService.queueOperation('character_update', c.toJson());
       return;
     }
     await http.put(
@@ -115,17 +119,8 @@ class CharacterApi {
 
   static Future<void> deleteCharacter(int id) async {
     if (OfflineService.isSupported && OfflineService.isOffline) {
-      final c = Character(
-        id: id,
-        character: '',
-        pinyin: '',
-        meaning: '',
-        level: '',
-        tags: const [],
-        other: '',
-        examples: '',
-      );
-      await OfflineService.queueOperation('delete', c);
+      await OfflineService.deleteLocalCharacter(id);
+      await OfflineService.queueOperation('character_delete', {'id': id});
       return;
     }
     await http.delete(
@@ -136,8 +131,20 @@ class CharacterApi {
 
   static Future<int?> createCharacter(Character c) async {
     if (OfflineService.isSupported && OfflineService.isOffline) {
-      await OfflineService.queueOperation('create', c);
-      return null;
+      final temp = Character(
+        id: OfflineService.nextTempId(),
+        character: c.character,
+        pinyin: c.pinyin,
+        meaning: c.meaning,
+        level: c.level,
+        tags: c.tags,
+        other: c.other,
+        examples: c.examples,
+      );
+      await OfflineService.addLocalCharacter(temp);
+      final payload = temp.toJson();
+      await OfflineService.queueOperation('character_create', payload);
+      return temp.id;
     }
     final response = await http.post(
       Uri.parse('$baseUrl/characters'),

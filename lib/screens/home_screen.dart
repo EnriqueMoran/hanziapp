@@ -5,6 +5,7 @@ import '../layout_preset.dart';
 import '../api/character_api.dart';
 import '../api/layout_preset_api.dart';
 import '../offline/offline_service.dart';
+import '../route_observer.dart';
 import 'character_review_screen.dart';
 import 'batch_group_selection_screen.dart';
 import 'batch_creation_screen.dart';
@@ -31,7 +32,7 @@ LayoutPreset? _findPresetByName(List<LayoutPreset> presets, String? name) {
 
 enum ConnectionStatus { unknown, online, offline }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final TextEditingController _searchController = TextEditingController();
   List<LayoutPreset> _presets = [];
   String? _selectedPreset;
@@ -43,6 +44,24 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _startup();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    _checkConnection();
   }
 
   Future<void> _startup() async {
@@ -96,16 +115,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final all = await CharacterApi.fetchAll();
     final lower = query.toLowerCase();
     final results = all
-        .where((c) =>
-            c.character.contains(query) ||
-            c.meaning.toLowerCase().contains(lower))
+        .where(
+          (c) =>
+              c.character.contains(query) ||
+              c.meaning.toLowerCase().contains(lower),
+        )
         .toList();
     if (!mounted) return;
     if (results.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No results found.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No results found.')));
     } else if (results.length == 1) {
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => CharacterReviewScreen(
@@ -114,13 +136,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       );
+      _checkConnection();
     } else {
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => SearchResultsScreen(results: results),
         ),
       );
+      _checkConnection();
     }
   }
 
@@ -133,10 +157,9 @@ class _HomeScreenState extends State<HomeScreen> {
             value: _selectedPreset,
             hint: const Text('Select layout'),
             items: _presets
-                .map((p) => DropdownMenuItem(
-                      value: p.name,
-                      child: Text(p.name),
-                    ))
+                .map(
+                  (p) => DropdownMenuItem(value: p.name, child: Text(p.name)),
+                )
                 .toList(),
             onChanged: (val) {
               setState(() {
@@ -161,6 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (changed == true) {
               await _loadPresets();
             }
+            _checkConnection();
           },
           child: const Text('Settings'),
         ),
@@ -173,10 +197,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: ElevatedButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => target),
-        ),
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => target),
+          );
+          _checkConnection();
+        },
         style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
         child: Text(label),
       ),
@@ -197,20 +224,26 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => target1),
-              ),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => target1),
+                );
+                _checkConnection();
+              },
               child: Text(label1),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: ElevatedButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => target2),
-              ),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => target2),
+                );
+                _checkConnection();
+              },
               child: Text(label2),
             ),
           ),
@@ -219,20 +252,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   Future<void> _sync({bool initial = false}) async {
     if (!OfflineService.isSupported) return;
     setState(() {
       _loading = true;
       _statusMessage = 'Checking server connection...';
     });
-    final hasConn =
-        await OfflineService.hasConnection(timeout: const Duration(seconds: 2));
+    final hasConn = await OfflineService.hasConnection(
+      timeout: const Duration(seconds: 2),
+    );
     OfflineService.isOffline = !hasConn;
     if (hasConn) {
       setState(() {
@@ -261,6 +289,17 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _loading = false;
       _statusMessage = '';
+    });
+  }
+
+  Future<void> _checkConnection() async {
+    if (!OfflineService.isSupported) return;
+    final hasConn = await OfflineService.hasConnection(
+      timeout: const Duration(seconds: 2),
+    );
+    OfflineService.isOffline = !hasConn;
+    setState(() {
+      _status = hasConn ? ConnectionStatus.online : ConnectionStatus.offline;
     });
   }
 
@@ -296,11 +335,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: _status == ConnectionStatus.online
                     ? Colors.green
                     : (_status == ConnectionStatus.offline
-                        ? Colors.orange
-                        : Colors.red),
+                          ? Colors.yellow
+                          : Colors.red),
               ),
             ),
-          )
+          ),
         ],
       ),
       body: SafeArea(
@@ -324,10 +363,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     _searchBox(),
                     const SizedBox(height: 16),
-                    _fullWidthButton(context, 'Review full vocabulary',
-                        CharacterReviewScreen()),
-                    _fullWidthButton(context, 'Review batches and groups',
-                        const BatchGroupSelectionScreen()),
+                    _fullWidthButton(
+                      context,
+                      'Review full vocabulary',
+                      CharacterReviewScreen(),
+                    ),
+                    _fullWidthButton(
+                      context,
+                      'Review batches and groups',
+                      const BatchGroupSelectionScreen(),
+                    ),
                     const SizedBox(height: 12),
                     _halfWidthButtonRow(
                       context,
@@ -336,12 +381,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Create group',
                       const GroupCreationScreen(),
                     ),
-                    _fullWidthButton(context, 'Edit groups', const GroupEditScreen()),
+                    _fullWidthButton(
+                      context,
+                      'Edit groups',
+                      const GroupEditScreen(),
+                    ),
                     const SizedBox(height: 12),
                     _fullWidthButton(
-                        context, 'Add character', const AddCharacterScreen()),
-                    _fullWidthButton(context, 'Delete characters',
-                        const DeleteCharacterScreen()),
+                      context,
+                      'Add character',
+                      const AddCharacterScreen(),
+                    ),
+                    _fullWidthButton(
+                      context,
+                      'Delete characters',
+                      const DeleteCharacterScreen(),
+                    ),
                   ],
                 ),
               ),
