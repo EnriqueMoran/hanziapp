@@ -534,7 +534,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final exampleHeight = screenH * layout.exampleHeightRatio;
     final drawingHeight = screenH * layout.drawingHeightRatio;
     final contentWidth = screenW - 48;
-    final panelWidth = contentWidth * layout.panelWidthRatio;
     final double detailFontSize =
         DeviceConfig.deviceType == DeviceType.tablet
             ? UiScale.detailFont * 1.5
@@ -715,6 +714,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
             ),
     );
 
+    final recognizedLabel = !modelReady
+        ? 'Recognized drawing: $recognizerStatus'
+        : 'Recognized drawing: ${recognizedText.isEmpty ? recognizerStatus : recognizedText}'
+            '${recognizedScore != null ? ' (${(recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}';
+
     return Scaffold(
       appBar: AppBar(title: Text('Character Review')),
       body: Stack(
@@ -810,80 +814,54 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (showTouchPanel)
-                    SizedBox(
-                      height: drawingHeight,
-                      width: contentWidth,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _infoColumn(),
-                          SizedBox(width: 8),
-                          SizedBox(
-                            width: panelWidth,
-                            child: GestureDetector(
-                              onPanStart: (details) {
-                                setState(
-                                  () => points.add(details.localPosition),
-                                );
-                                strokePoints = [];
-                                strokePoints.add(
-                                  mlkit.StrokePoint(
-                                    x: details.localPosition.dx,
-                                    y: details.localPosition.dy,
-                                    t: DateTime.now().millisecondsSinceEpoch,
-                                  ),
-                                );
-                                ink.strokes.add(
-                                  mlkit.Stroke()
-                                    ..points = List.of(strokePoints),
-                                );
-                              },
-                              onPanUpdate: (details) {
-                                setState(
-                                  () => points.add(details.localPosition),
-                                );
-                                strokePoints.add(
-                                  mlkit.StrokePoint(
-                                    x: details.localPosition.dx,
-                                    y: details.localPosition.dy,
-                                    t: DateTime.now().millisecondsSinceEpoch,
-                                  ),
-                                );
-                                ink.strokes.last.points = List.of(strokePoints);
-                                queueRecognition();
-                              },
-                              onPanEnd: (_) {
-                                setState(() => points.add(null));
-                                strokePoints = [];
-                                queueRecognition();
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[800],
-                                  border: Border.all(color: Colors.white24),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: CustomPaint(
-                                  painter: _DrawingPainter(points: points),
-                                  child: SizedBox.expand(),
-                                ),
-                              ),
+                    if (DeviceConfig.deviceType == DeviceType.smartphone)
+                      SizedBox(
+                        width: contentWidth,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              height: drawingHeight,
+                              child: _buildDrawingPad(),
                             ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 8.0),
+                            SizedBox(height: 8),
+                            _infoColumn(),
+                            SizedBox(height: 8),
+                            Text(
+                              recognizedLabel,
+                              style: TextStyle(fontSize: UiScale.smallFont),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        height: drawingHeight,
+                        width: contentWidth,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                  minWidth: 140, maxWidth: UiScale.controlsWidth),
+                              child: _infoColumn(),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              flex: 3,
+                              child: SizedBox.expand(child: _buildDrawingPad()),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              flex: 2,
                               child: Text(
-                                !modelReady
-                                    ? 'Recognized drawing: $recognizerStatus'
-                                    : 'Recognized drawing: ${recognizedText.isEmpty ? recognizerStatus : recognizedText}${recognizedScore != null ? ' (${(recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
+                                recognizedLabel,
                                 style: TextStyle(fontSize: UiScale.smallFont),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    )
+                          ],
+                        ),
+                      )
                   else
                     Align(
                       alignment: Alignment.centerLeft,
@@ -953,55 +931,97 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   }
 
   Widget _infoColumn() {
-    return SizedBox(
-      width: UiScale.controlsWidth,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          editing
-              ? SizedBox(
-                  width: UiScale.controlsWidth,
-                  child: TextField(
-                    controller: levelController,
-                    decoration: InputDecoration(
-                      labelText: 'Level',
-                      isDense: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    ),
-                  ),
-                )
-              : SelectableText('Level: ${current?.level ?? ''}'),
-          SizedBox(height: 4),
-          editing
-              ? Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: tagsController,
-                        decoration: InputDecoration(
-                          labelText: 'Tags',
-                          isDense: true,
-                          contentPadding:
-                              EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        ),
+    final level = current?.level;
+    final tags = current?.tags;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        editing
+            ? TextField(
+                controller: levelController,
+                decoration: InputDecoration(
+                  labelText: 'Level',
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                ),
+              )
+            : SelectableText('Level: ${level == null || level.isEmpty ? '—' : level}'),
+        SizedBox(height: 4),
+        editing
+            ? Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: tagsController,
+                      decoration: InputDecoration(
+                        labelText: 'Tags',
+                        isDense: true,
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       ),
                     ),
-                    IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
-                  ],
-                )
-              : SelectableText('Tags: ${current?.tags.join(', ')}'),
-          SizedBox(height: 8),
-          SelectableText(
-            'Batch/Group: $batchLabel',
-            style: TextStyle(fontSize: UiScale.smallFont),
+                  ),
+                  IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
+                ],
+              )
+            : SelectableText(
+                'Tags: ${tags == null || tags.isEmpty ? '—' : tags.join(', ')}'),
+        SizedBox(height: 8),
+        SelectableText(
+          'Batch/Group: $batchLabel',
+          style: TextStyle(fontSize: UiScale.smallFont),
+        ),
+        SizedBox(height: 4),
+        SelectableText(
+          'Characters left in this $_reviewType: ${characters.length - currentIndex - 1}',
+          style: TextStyle(fontSize: UiScale.smallFont),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDrawingPad() {
+    return GestureDetector(
+      onPanStart: (details) {
+        setState(() => points.add(details.localPosition));
+        strokePoints = [];
+        strokePoints.add(
+          mlkit.StrokePoint(
+            x: details.localPosition.dx,
+            y: details.localPosition.dy,
+            t: DateTime.now().millisecondsSinceEpoch,
           ),
-          SizedBox(height: 4),
-          SelectableText(
-            'Characters left in this $_reviewType: ${characters.length - currentIndex - 1}',
-            style: TextStyle(fontSize: UiScale.smallFont),
+        );
+        ink.strokes.add(mlkit.Stroke()..points = List.of(strokePoints));
+      },
+      onPanUpdate: (details) {
+        setState(() => points.add(details.localPosition));
+        strokePoints.add(
+          mlkit.StrokePoint(
+            x: details.localPosition.dx,
+            y: details.localPosition.dy,
+            t: DateTime.now().millisecondsSinceEpoch,
           ),
-        ],
+        );
+        ink.strokes.last.points = List.of(strokePoints);
+        queueRecognition();
+      },
+      onPanEnd: (_) {
+        setState(() => points.add(null));
+        strokePoints = [];
+        queueRecognition();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[800],
+          border: Border.all(color: Colors.white24),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: CustomPaint(
+          painter: _DrawingPainter(points: points),
+          child: SizedBox.expand(),
+        ),
       ),
     );
   }
