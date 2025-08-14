@@ -20,6 +20,15 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
   late double _panelWidth;
   late double _fontScale;
 
+  void _applyLayout() {
+    DeviceConfig.customLayout = LayoutConfig(
+      exampleHeightRatio: _exampleHeight,
+      drawingHeightRatio: _drawingHeight,
+      panelWidthRatio: _panelWidth,
+      fontScale: _fontScale,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -42,10 +51,11 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _fontController =
           TextEditingController(text: _fontScale.toStringAsFixed(2));
     }
+    _applyLayout();
   }
 
   void _newLayout() {
-    final layout = DeviceConfig.layout;
+    final layout = LayoutConfig.forType(DeviceConfig.deviceType);
     setState(() {
       _nameController.clear();
       _exampleHeight = layout.exampleHeightRatio;
@@ -53,6 +63,7 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _panelWidth = layout.panelWidthRatio;
       _fontScale = layout.fontScale;
       _fontController.text = _fontScale.toStringAsFixed(2);
+      _applyLayout();
     });
   }
 
@@ -79,6 +90,7 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
     list.add(preset);
     await LayoutPresetApi.savePresets(list);
     await LayoutPresetApi.setSelected(name);
+    DeviceConfig.customLayout = preset.toLayoutConfig();
     if (!mounted) return;
     Navigator.pop(context, true);
   }
@@ -106,6 +118,8 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
     list.removeWhere((p) => p.name == widget.preset?.name);
     await LayoutPresetApi.savePresets(list);
     await LayoutPresetApi.setSelected(null);
+    DeviceConfig.customLayout =
+        LayoutConfig.forType(DeviceConfig.deviceType);
     if (!mounted) return;
     Navigator.pop(context, true);
   }
@@ -147,7 +161,10 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                       onChanged: (v) {
                         final value = double.tryParse(v);
                         if (value != null) {
-                          setState(() => _fontScale = value);
+                          setState(() {
+                            _fontScale = value;
+                            _applyLayout();
+                          });
                         }
                       },
                     ),
@@ -165,21 +182,30 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                 value: _exampleHeight,
                 min: 0.1,
                 max: 0.5,
-                onChanged: (v) => setState(() => _exampleHeight = v),
+                onChanged: (v) => setState(() {
+                  _exampleHeight = v;
+                  _applyLayout();
+                }),
               ),
               const Text('Touch panel height'),
               Slider(
                 value: _drawingHeight,
                 min: 0.1,
                 max: 0.5,
-                onChanged: (v) => setState(() => _drawingHeight = v),
+                onChanged: (v) => setState(() {
+                  _drawingHeight = v;
+                  _applyLayout();
+                }),
               ),
               const Text('Panel width'),
               Slider(
                 value: _panelWidth,
                 min: 0.3,
                 max: 0.7,
-                onChanged: (v) => setState(() => _panelWidth = v),
+                onChanged: (v) => setState(() {
+                  _panelWidth = v;
+                  _applyLayout();
+                }),
               ),
               const SizedBox(height: 24),
               Row(
