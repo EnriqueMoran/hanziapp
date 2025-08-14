@@ -269,12 +269,14 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     OfflineService.isOffline = !hasConn;
     if (hasConn) {
       final dbSize = await OfflineService.syncWithServer(
-        progress: (msg, current, total, {int? items, int? bytes}) {
+        progress: (msg, current, total,
+            {int? currentItem, int? totalItems}) {
           if (!mounted) return;
           setState(() {
             var text = '$msg ($current/$total)';
-            if (items != null) text += ' - $items items';
-            if (bytes != null) text += ' - ${_formatBytes(bytes)}';
+            if (currentItem != null && totalItems != null) {
+              text += ' - $currentItem/$totalItems items';
+            }
             _statusMessage = text;
           });
         },

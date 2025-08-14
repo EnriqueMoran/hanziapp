@@ -12,13 +12,14 @@ import '../api/api_config.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
 import '../api/batch_api.dart' show Batch, BatchApi;
+import '../api/settings_api.dart';
 
 typedef SyncProgress = void Function(
   String message,
   int current,
   int total, {
-  int? items,
-  int? bytes,
+  int? currentItem,
+  int? totalItems,
 });
 
 class OfflineService {
@@ -74,6 +75,12 @@ class OfflineService {
             updated_at INTEGER
           )
         ''');
+        await db.execute('''
+          CREATE TABLE settings(
+            key TEXT PRIMARY KEY,
+            value TEXT
+          )
+        ''');
       },
     );
   }
@@ -105,6 +112,9 @@ class OfflineService {
   static Future<void> _saveCharacters(
     List<Character> chars, {
     bool clearExisting = false,
+    SyncProgress? progress,
+    int stage = 0,
+    int totalStages = 0,
   }) async {
     if (!isSupported) return;
     final db = _db;
@@ -113,7 +123,8 @@ class OfflineService {
       await db.delete('characters');
     }
     final batch = db.batch();
-    for (final c in chars) {
+    for (int i = 0; i < chars.length; i++) {
+      final c = chars[i];
       batch.insert('characters', {
         'id': c.id,
         'character': c.character,
@@ -125,6 +136,8 @@ class OfflineService {
         'examples': c.examples,
         'updated_at': DateTime.now().millisecondsSinceEpoch,
         }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+      progress?.call('Characters synced', stage, totalStages,
+          currentItem: i + 1, totalItems: chars.length);
     }
     await batch.commit(noResult: true);
   }
@@ -152,6 +165,9 @@ class OfflineService {
   static Future<void> _saveGroups(
     List<Group> groups, {
     bool clearExisting = false,
+    SyncProgress? progress,
+    int stage = 0,
+    int totalStages = 0,
   }) async {
     if (!isSupported) return;
     final db = _db;
@@ -160,13 +176,16 @@ class OfflineService {
       await db.delete('groups');
     }
     final batch = db.batch();
-    for (final g in groups) {
+    for (int i = 0; i < groups.length; i++) {
+      final g = groups[i];
       batch.insert('groups', {
         'id': g.id,
         'name': g.name,
         'characters': g.characterIds.join(','),
         'updated_at': DateTime.now().millisecondsSinceEpoch,
         }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+      progress?.call('Groups synced', stage, totalStages,
+          currentItem: i + 1, totalItems: groups.length);
     }
     await batch.commit(noResult: true);
   }
@@ -193,6 +212,9 @@ class OfflineService {
   static Future<void> _saveBatches(
     List<Batch> batches, {
     bool clearExisting = false,
+    SyncProgress? progress,
+    int stage = 0,
+    int totalStages = 0,
   }) async {
     if (!isSupported) return;
     final db = _db;
@@ -201,15 +223,35 @@ class OfflineService {
       await db.delete('batches');
     }
     final batch = db.batch();
-    for (final b in batches) {
+    for (int i = 0; i < batches.length; i++) {
+      final b = batches[i];
       batch.insert('batches', {
         'id': b.id,
         'name': b.name,
         'characters': b.characters.join(','),
         'updated_at': DateTime.now().millisecondsSinceEpoch,
         }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+      progress?.call('Batches synced', stage, totalStages,
+          currentItem: i + 1, totalItems: batches.length);
     }
     await batch.commit(noResult: true);
+  }
+
+  static Future<void> setSetting(String key, String value) async {
+    if (!isSupported) return;
+    final db = _db;
+    if (db == null) return;
+    await db.insert('settings', {'key': key, 'value': value},
+        conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+  }
+
+  static Future<String> getSetting(String key) async {
+    if (!isSupported) return '';
+    final db = _db;
+    if (db == null) return '';
+    final res = await db.query('settings', where: 'key = ?', whereArgs: [key]);
+    if (res.isEmpty) return '';
+    return res.first['value'] as String? ?? '';
   }
 
   static int nextTempId() => _tempId--;
@@ -248,25 +290,41 @@ class OfflineService {
 
   static Future<int> downloadAll({SyncProgress? progress}) async {
     if (!isSupported) return 0;
-    const total = 3;
+    const total = 4;
     final chars = await CharacterApi.fetchAll(forceRemote: true);
-    await _saveCharacters(chars, clearExisting: true);
-    var size = await File(_dbPath).length();
-    progress?.call('Characters synced', 1, total,
-        items: chars.length, bytes: size);
+    await _saveCharacters(chars,
+        clearExisting: true,
+        progress: progress,
+        stage: 1,
+        totalStages: total);
 
     final groups = await GroupApi.fetchAll(forceRemote: true);
-    await _saveGroups(groups, clearExisting: true);
-    size = await File(_dbPath).length();
-    progress?.call('Groups synced', 2, total,
-        items: groups.length, bytes: size);
+    await _saveGroups(groups,
+        clearExisting: true,
+        progress: progress,
+        stage: 2,
+        totalStages: total);
 
     final batches = await BatchApi.fetchAll(forceRemote: true);
-    await _saveBatches(batches, clearExisting: true);
-    size = await File(_dbPath).length();
-    progress?.call('Batches synced', 3, total,
-        items: batches.length, bytes: size);
+    await _saveBatches(batches,
+        clearExisting: true,
+        progress: progress,
+        stage: 3,
+        totalStages: total);
 
+    const presetKey = 'layout_presets';
+    const selectedKey = 'selected_layout_preset';
+    final presetStr = await SettingsApi.getString(presetKey);
+    final List list = presetStr.isEmpty ? [] : json.decode(presetStr);
+    for (int i = 0; i < list.length; i++) {
+      progress?.call('Layouts synced', 4, total,
+          currentItem: i + 1, totalItems: list.length);
+    }
+    await setSetting(presetKey, presetStr);
+    final sel = await SettingsApi.getString(selectedKey);
+    await setSetting(selectedKey, sel);
+
+    final size = await File(_dbPath).length();
     return size;
   }
 
@@ -290,9 +348,11 @@ class OfflineService {
     if (!isSupported) return 0;
     final db = _db;
     if (db != null) {
-      progress?.call('Uploading pending operations', 0, 4);
       final ops = await db.query('pending_ops', orderBy: 'updated_at');
-      for (final op in ops) {
+      for (int i = 0; i < ops.length; i++) {
+        progress?.call('Uploading pending operations', 0, 5,
+            currentItem: i + 1, totalItems: ops.length);
+        final op = ops[i];
         final payload = json.decode(op['payload'] as String);
         final type = op['op_type'] as String;
         switch (type) {
@@ -342,9 +402,9 @@ class OfflineService {
       await db.delete('pending_ops');
     }
     return await downloadAll(progress: (msg, current, total,
-        {int? items, int? bytes}) {
+        {int? currentItem, int? totalItems}) {
       progress?.call(msg, current + 1, total + 1,
-          items: items, bytes: bytes);
+          currentItem: currentItem, totalItems: totalItems);
     });
   }
 
