@@ -21,6 +21,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+LayoutPreset? _findPresetByName(List<LayoutPreset> presets, String? name) {
+  for (final p in presets) {
+    if (p.name == name) return p;
+  }
+  return null;
+}
+
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<LayoutPreset> _presets = [];
@@ -38,8 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _presets = presets;
       _selectedPreset = selected;
-      final p = _presets
-          .firstWhere((e) => e.name == selected, orElse: () => null);
+      final p = _findPresetByName(_presets, selected);
       DeviceConfig.customLayout = p?.toLayoutConfig();
     });
   }
@@ -113,8 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onChanged: (val) {
               setState(() {
                 _selectedPreset = val;
-                final p = _presets
-                    .firstWhere((e) => e.name == val, orElse: () => null);
+                final p = _findPresetByName(_presets, val);
                 DeviceConfig.customLayout = p?.toLayoutConfig();
               });
               LayoutPresetApi.setSelected(val);
@@ -124,8 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(width: 8),
         ElevatedButton(
           onPressed: () async {
-            final preset = _presets
-                .firstWhere((e) => e.name == _selectedPreset, orElse: () => null);
+            final preset = _findPresetByName(_presets, _selectedPreset);
             final changed = await Navigator.push<bool>(
               context,
               MaterialPageRoute(

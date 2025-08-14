@@ -213,7 +213,7 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
                 ),
               ],
             ),
-          ],
+          ],)
         ),
       ),
     );

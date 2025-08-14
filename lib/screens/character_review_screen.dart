@@ -859,7 +859,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       ),
                     ],
                   ),
-                ],
+                ],)
               ),
             ),
           ),
