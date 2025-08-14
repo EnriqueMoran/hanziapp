@@ -4,8 +4,10 @@ import '../layout_config.dart';
 import '../layout_preset.dart';
 import '../api/character_api.dart';
 import '../api/layout_preset_api.dart';
+import '../api/api_config.dart';
 import '../offline/offline_service.dart';
 import '../route_observer.dart';
+import 'package:http/http.dart' as http;
 import 'character_review_screen.dart';
 import 'batch_group_selection_screen.dart';
 import 'batch_creation_screen.dart';
@@ -66,6 +68,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
   Future<void> _startup() async {
     setState(() {
+      _statusMessage = 'Checking server connection...';
+    });
+    await _checkConnection();
+    setState(() {
       _statusMessage = 'Loading presets...';
     });
     await _loadPresets();
@@ -74,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     } else {
       setState(() {
         _loading = false;
-        _status = ConnectionStatus.online;
         _statusMessage = '';
       });
     }
@@ -300,11 +305,18 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }
 
   Future<void> _checkConnection() async {
-    if (!OfflineService.isSupported) return;
-    final hasConn = await OfflineService.hasConnection(
-      timeout: const Duration(seconds: 2),
-    );
-    OfflineService.isOffline = !hasConn;
+    bool hasConn;
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.baseUrl}/ping'))
+          .timeout(const Duration(seconds: 2));
+      hasConn = resp.statusCode < 500;
+    } catch (_) {
+      hasConn = false;
+    }
+    if (OfflineService.isSupported) {
+      OfflineService.isOffline = !hasConn;
+    }
     setState(() {
       _status = hasConn ? ConnectionStatus.online : ConnectionStatus.offline;
     });
