@@ -540,9 +540,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final drawingHeight = screenH * layout.drawingHeightRatio;
     final contentWidth = screenW - 48;
     final double detailFontSize =
-        DeviceConfig.deviceType == DeviceType.tablet
-            ? UiScale.detailFont * 1.5
-            : UiScale.detailFont;
+        (DeviceConfig.deviceType == DeviceType.tablet
+                ? UiScale.detailFont * 1.5
+                : UiScale.detailFont) *
+            layout.fontScale;
 
     final previewBox = Column(
       mainAxisSize: MainAxisSize.min,
@@ -868,15 +869,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     );
   }
 
-  Widget _buildBrowserLayout(BuildContext context) =>
-      _buildLayout(context, LayoutConfig.forType(DeviceType.browser));
-
-  Widget _buildTabletLayout(BuildContext context) =>
-      _buildLayout(context, LayoutConfig.forType(DeviceType.tablet));
-
-  Widget _buildSmartphoneLayout(BuildContext context) =>
-      _buildLayout(context, LayoutConfig.forType(DeviceType.smartphone));
-
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -887,15 +879,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     } else {
       DeviceConfig.deviceType = DeviceType.smartphone;
     }
-    switch (DeviceConfig.deviceType) {
-      case DeviceType.tablet:
-        return _buildTabletLayout(context);
-      case DeviceType.smartphone:
-        return _buildSmartphoneLayout(context);
-      case DeviceType.browser:
-      default:
-        return _buildBrowserLayout(context);
-    }
+    return _buildLayout(context, DeviceConfig.layout);
   }
 
   Widget _infoColumn(String recognizedLabel) {

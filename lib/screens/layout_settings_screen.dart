@@ -20,15 +20,6 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
   late double _panelWidth;
   late double _fontScale;
 
-  void _applyLayout() {
-    DeviceConfig.customLayout = LayoutConfig(
-      exampleHeightRatio: _exampleHeight,
-      drawingHeightRatio: _drawingHeight,
-      panelWidthRatio: _panelWidth,
-      fontScale: _fontScale,
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -51,7 +42,6 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _fontController =
           TextEditingController(text: _fontScale.toStringAsFixed(2));
     }
-    _applyLayout();
   }
 
   void _newLayout() {
@@ -63,7 +53,6 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _panelWidth = layout.panelWidthRatio;
       _fontScale = layout.fontScale;
       _fontController.text = _fontScale.toStringAsFixed(2);
-      _applyLayout();
     });
   }
 
@@ -134,16 +123,6 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
           padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
-              SizedBox(
-                height: 300,
-                child: _LayoutPreview(
-                  exampleHeightRatio: _exampleHeight,
-                  drawingHeightRatio: _drawingHeight,
-                  panelWidthRatio: _panelWidth,
-                  fontScale: _fontScale,
-                ),
-              ),
-              const SizedBox(height: 16),
               TextField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
@@ -163,7 +142,6 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                         if (value != null) {
                           setState(() {
                             _fontScale = value;
-                            _applyLayout();
                           });
                         }
                       },
@@ -184,7 +162,6 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                 max: 0.5,
                 onChanged: (v) => setState(() {
                   _exampleHeight = v;
-                  _applyLayout();
                 }),
               ),
               const Text('Touch panel height'),
@@ -194,7 +171,6 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                 max: 0.5,
                 onChanged: (v) => setState(() {
                   _drawingHeight = v;
-                  _applyLayout();
                 }),
               ),
               const Text('Panel width'),
@@ -204,7 +180,6 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                 max: 0.7,
                 onChanged: (v) => setState(() {
                   _panelWidth = v;
-                  _applyLayout();
                 }),
               ),
               const SizedBox(height: 24),
@@ -231,79 +206,6 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _LayoutPreview extends StatelessWidget {
-  final double exampleHeightRatio;
-  final double drawingHeightRatio;
-  final double panelWidthRatio;
-  final double fontScale;
-
-  const _LayoutPreview({
-    required this.exampleHeightRatio,
-    required this.drawingHeightRatio,
-    required this.panelWidthRatio,
-    required this.fontScale,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final h = constraints.maxHeight;
-        final exampleHeight = h * exampleHeightRatio;
-        final drawingHeight = h * drawingHeightRatio;
-        final infoHeight = h - exampleHeight - drawingHeight;
-        final infoWidth = w * panelWidthRatio;
-        final drawWidth = w - infoWidth;
-        final textStyle = TextStyle(fontSize: 16 * fontScale);
-
-        return Column(
-          children: [
-            Container(
-              height: exampleHeight,
-              color: Colors.grey[300],
-              alignment: Alignment.center,
-              child: Text('Example', style: textStyle),
-            ),
-            SizedBox(
-              height: infoHeight,
-              child: Row(
-                children: [
-                  Container(
-                    width: infoWidth,
-                    padding: const EdgeInsets.all(4),
-                    color: Colors.grey[200],
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Level: 1', style: textStyle),
-                        Text('Tags: demo', style: textStyle),
-                        Text('Group/Batch', style: textStyle),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: drawWidth,
-                    color: Colors.grey[400],
-                    alignment: Alignment.center,
-                    child: const Text('Touch'),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              height: drawingHeight,
-              color: Colors.grey[300],
-              alignment: Alignment.center,
-              child: const Text('Examples'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
