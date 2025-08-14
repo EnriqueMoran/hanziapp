@@ -4,7 +4,9 @@ import sys
 
 import os
 
-DB_PATH = os.environ.get('DB_PATH', 'hanzi.db')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, '..', 'db', 'hanzi.db')
+DB_PATH = os.environ.get('DB_PATH', DEFAULT_DB_PATH)
 
 
 def main():
@@ -23,8 +25,13 @@ def main():
         cur.execute(query)
         return [dict(r) for r in cur.fetchall()]
 
+    characters = fetch_all('SELECT * FROM characters')
+    for rec in characters:
+        tags = rec.get('tags', '')
+        rec['tags'] = [t for t in tags.split(',') if t]
+
     data = {
-        'characters': fetch_all('SELECT * FROM characters'),
+        'characters': characters,
         'batches': fetch_all('SELECT * FROM batches'),
         'groups': fetch_all('SELECT * FROM groups'),
         'tags': [r['name'] for r in fetch_all('SELECT name FROM tags')],
