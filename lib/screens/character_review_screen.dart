@@ -35,12 +35,12 @@ class CharacterReviewScreen extends StatefulWidget {
 }
 
 class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
-  bool autoSound = false;
-  bool showHanzi = true;
-  bool showPinyin = true;
-  bool showTranslation = true;
-  bool showTouchPanel = !kIsWeb;
-  bool showInfoText = DeviceConfig.deviceType != DeviceType.smartphone;
+  bool autoSound = DeviceConfig.layout.autoSound;
+  bool showHanzi = DeviceConfig.layout.showHanzi;
+  bool showPinyin = DeviceConfig.layout.showPinyin;
+  bool showTranslation = DeviceConfig.layout.showTranslation;
+  bool showTouchPanel = DeviceConfig.layout.showTouchPanel;
+  bool showInfoText = DeviceConfig.layout.showInfoText;
   bool editing = false;
 
   late final TextEditingController hanziController;

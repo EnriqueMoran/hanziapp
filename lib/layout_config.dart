@@ -7,12 +7,24 @@ class LayoutConfig {
   final double drawingHeightRatio;
   final double panelWidthRatio;
   final double fontScale;
+  final bool showHanzi;
+  final bool showPinyin;
+  final bool showTranslation;
+  final bool showInfoText;
+  final bool showTouchPanel;
+  final bool autoSound;
 
   const LayoutConfig({
     required this.exampleHeightRatio,
     required this.drawingHeightRatio,
     required this.panelWidthRatio,
     this.fontScale = 1.0,
+    this.showHanzi = true,
+    this.showPinyin = true,
+    this.showTranslation = true,
+    this.showInfoText = true,
+    this.showTouchPanel = true,
+    this.autoSound = false,
   });
 
   static LayoutConfig forType(DeviceType type) {
@@ -23,6 +35,7 @@ class LayoutConfig {
           drawingHeightRatio: 0.20,
           panelWidthRatio: 0.5,
           fontScale: 1.0,
+          showTouchPanel: false,
         );
       case DeviceType.tablet:
         return const LayoutConfig(
@@ -38,6 +51,7 @@ class LayoutConfig {
           drawingHeightRatio: 0.21,
           panelWidthRatio: 0.55,
           fontScale: 1.0,
+          showInfoText: false,
         );
     }
   }

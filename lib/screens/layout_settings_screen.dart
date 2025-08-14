@@ -19,6 +19,12 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
   late double _drawingHeight;
   late double _panelWidth;
   late double _fontScale;
+  late bool _showHanzi;
+  late bool _showPinyin;
+  late bool _showTranslation;
+  late bool _showInfoText;
+  late bool _showTouchPanel;
+  late bool _autoSound;
 
   @override
   void initState() {
@@ -30,6 +36,12 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _drawingHeight = p.drawingHeightRatio;
       _panelWidth = p.panelWidthRatio;
       _fontScale = p.fontScale;
+      _showHanzi = p.showHanzi;
+      _showPinyin = p.showPinyin;
+      _showTranslation = p.showTranslation;
+      _showInfoText = p.showInfoText;
+      _showTouchPanel = p.showTouchPanel;
+      _autoSound = p.autoSound;
       _fontController =
           TextEditingController(text: _fontScale.toStringAsFixed(2));
     } else {
@@ -39,6 +51,12 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _drawingHeight = layout.drawingHeightRatio;
       _panelWidth = layout.panelWidthRatio;
       _fontScale = layout.fontScale;
+      _showHanzi = layout.showHanzi;
+      _showPinyin = layout.showPinyin;
+      _showTranslation = layout.showTranslation;
+      _showInfoText = layout.showInfoText;
+      _showTouchPanel = layout.showTouchPanel;
+      _autoSound = layout.autoSound;
       _fontController =
           TextEditingController(text: _fontScale.toStringAsFixed(2));
     }
@@ -52,6 +70,12 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _drawingHeight = layout.drawingHeightRatio;
       _panelWidth = layout.panelWidthRatio;
       _fontScale = layout.fontScale;
+      _showHanzi = layout.showHanzi;
+      _showPinyin = layout.showPinyin;
+      _showTranslation = layout.showTranslation;
+      _showInfoText = layout.showInfoText;
+      _showTouchPanel = layout.showTouchPanel;
+      _autoSound = layout.autoSound;
       _fontController.text = _fontScale.toStringAsFixed(2);
     });
   }
@@ -72,6 +96,12 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       drawingHeightRatio: _drawingHeight,
       panelWidthRatio: _panelWidth,
       fontScale: _fontScale,
+      showHanzi: _showHanzi,
+      showPinyin: _showPinyin,
+      showTranslation: _showTranslation,
+      showInfoText: _showInfoText,
+      showTouchPanel: _showTouchPanel,
+      autoSound: _autoSound,
     );
     final list = await LayoutPresetApi.loadPresets();
     list.removeWhere((p) => p.name == widget.preset?.name);
@@ -181,6 +211,37 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                 onChanged: (v) => setState(() {
                   _panelWidth = v;
                 }),
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Show Hanzi'),
+                value: _showHanzi,
+                onChanged: (v) => setState(() => _showHanzi = v),
+              ),
+              SwitchListTile(
+                title: const Text('Show Pinyin'),
+                value: _showPinyin,
+                onChanged: (v) => setState(() => _showPinyin = v),
+              ),
+              SwitchListTile(
+                title: const Text('Show Translation'),
+                value: _showTranslation,
+                onChanged: (v) => setState(() => _showTranslation = v),
+              ),
+              SwitchListTile(
+                title: const Text('Show Info Text'),
+                value: _showInfoText,
+                onChanged: (v) => setState(() => _showInfoText = v),
+              ),
+              SwitchListTile(
+                title: const Text('Touch Panel'),
+                value: _showTouchPanel,
+                onChanged: (v) => setState(() => _showTouchPanel = v),
+              ),
+              SwitchListTile(
+                title: const Text('Auto Sound'),
+                value: _autoSound,
+                onChanged: (v) => setState(() => _autoSound = v),
               ),
               const SizedBox(height: 24),
               Row(
