@@ -456,6 +456,77 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     if (autoSound && hasAudio) playAudio();
   }
 
+  void _openSettingsMenu() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text('Settings'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildToggle('Show Hanzi', showHanzi, (v) {
+                      setState(() => showHanzi = v);
+                      setStateDialog(() {});
+                    }),
+                    _buildToggle('Show Pinyin', showPinyin, (v) {
+                      setState(() => showPinyin = v);
+                      setStateDialog(() {});
+                    }),
+                    _buildToggle('Show Translation', showTranslation, (v) {
+                      setState(() => showTranslation = v);
+                      setStateDialog(() {});
+                    }),
+                    _buildToggle('Touch Panel', showTouchPanel, (v) {
+                      setState(() => showTouchPanel = v);
+                      setStateDialog(() {});
+                    }),
+                    _buildToggle('Auto Sound', autoSound, (v) {
+                      setState(() => autoSound = v);
+                      setStateDialog(() {});
+                      if (v && hasAudio) playAudio();
+                    }),
+                    SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Restart?'),
+                            content: Text('Are you sure you want to restart?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: Text('Restart'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          Navigator.pop(context);
+                          restartReview();
+                        }
+                      },
+                      child: Text('RESTART'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
 
   Widget _buildLayout(BuildContext context, LayoutConfig layout) {
     final screenW = MediaQuery.of(context).size.width;
@@ -468,32 +539,6 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         DeviceConfig.deviceType == DeviceType.tablet
             ? UiScale.detailFont * 1.5
             : UiScale.detailFont;
-
-    // Show the visibility toggles on all devices, including smartphones
-    const showAllToggles = true;
-    final toggles = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showAllToggles)
-          _buildToggle(
-            'Show Hanzi',
-            showHanzi,
-            (v) => setState(() => showHanzi = v),
-          ),
-        if (showAllToggles)
-          _buildToggle(
-            'Show Pinyin',
-            showPinyin,
-            (v) => setState(() => showPinyin = v),
-          ),
-        if (showAllToggles)
-          _buildToggle(
-            'Show Translation',
-            showTranslation,
-            (v) => setState(() => showTranslation = v),
-          ),
-      ],
-    );
 
     final previewBox = Column(
       mainAxisSize: MainAxisSize.min,
@@ -550,20 +595,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       ],
     );
 
-    final controls = Column(
+    final listenButton = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildToggle('Touch Panel', showTouchPanel, (v) {
-          setState(() => showTouchPanel = v);
-        }),
-        SizedBox(height: 8),
-        _buildToggle('Auto Sound', autoSound, (v) {
-          setState(() => autoSound = v);
-          if (v && hasAudio) playAudio();
-        }),
-        SizedBox(height: 8),
-        ElevatedButton(onPressed: restartReview, child: Text('RESTART')),
-        SizedBox(height: 8),
         ElevatedButton(
           onPressed: hasAudio ? playAudio : null,
           child: Text('LISTEN'),
@@ -692,10 +726,18 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (showAllToggles)
-                      SizedBox(width: UiScale.toggleWidth, child: toggles),
+                    SizedBox(
+                      width: UiScale.toggleWidth,
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: IconButton(
+                          icon: Icon(Icons.settings),
+                          onPressed: _openSettingsMenu,
+                        ),
+                      ),
+                    ),
                     Expanded(child: Center(child: previewBox)),
-                    SizedBox(width: UiScale.controlsWidth, child: controls),
+                    SizedBox(width: UiScale.controlsWidth, child: listenButton),
                   ],
                 ),
                 SizedBox(height: 24),
