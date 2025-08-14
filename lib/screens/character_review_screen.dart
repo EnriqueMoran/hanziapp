@@ -809,37 +809,39 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: contentWidth,
-                    child: _infoColumn(recognizedLabel),
-                  ),
-                  SizedBox(height: 8),
-                  if (showTouchPanel)
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
                     SizedBox(
                       width: contentWidth,
-                      height: drawingHeight,
-                      child: _buildDrawingPad(),
+                      child: _infoColumn(recognizedLabel),
                     ),
-                  SizedBox(height: showTouchPanel ? 16 : 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (showTouchPanel)
-                        ElevatedButton(
-                          onPressed: clearDrawing,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                    SizedBox(height: 8),
+                    if (showTouchPanel)
+                      SizedBox(
+                        width: contentWidth,
+                        height: drawingHeight,
+                        child: _buildDrawingPad(),
+                      ),
+                    SizedBox(height: showTouchPanel ? 16 : 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (showTouchPanel)
+                          ElevatedButton(
+                            onPressed: clearDrawing,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            child: Text('DELETE'),
                           ),
-                          child: Text('DELETE'),
-                        ),
-                      if (showTouchPanel) SizedBox(width: 8),
-                      ElevatedButton(
+                        if (showTouchPanel) SizedBox(width: 8),
+                        ElevatedButton(
                         onPressed: goToPreviousCharacter,
                         child: Text('PREVIOUS'),
                       ),

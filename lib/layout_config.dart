@@ -24,7 +24,7 @@ class LayoutConfig {
       case DeviceType.tablet:
         return const LayoutConfig(
           exampleHeightRatio: 0.376,
-          drawingHeightRatio: 0.25,
+          drawingHeightRatio: 0.20,
           panelWidthRatio: 0.55,
         );
       case DeviceType.smartphone:
