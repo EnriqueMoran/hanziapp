@@ -144,14 +144,16 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Create Group')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Group name'),
-            ),
+      body: SafeArea(
+        bottom: true,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Group name'),
+              ),
             const SizedBox(height: 16),
             Expanded(child: content),
             const SizedBox(height: 16),
@@ -186,7 +188,8 @@ class _GroupCreationScreenState extends State<GroupCreationScreen> {
                 ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

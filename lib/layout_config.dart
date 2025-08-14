@@ -6,11 +6,13 @@ class LayoutConfig {
   final double exampleHeightRatio;
   final double drawingHeightRatio;
   final double panelWidthRatio;
+  final double fontScale;
 
   const LayoutConfig({
     required this.exampleHeightRatio,
     required this.drawingHeightRatio,
     required this.panelWidthRatio,
+    this.fontScale = 1.0,
   });
 
   static LayoutConfig forType(DeviceType type) {
@@ -20,12 +22,14 @@ class LayoutConfig {
           exampleHeightRatio: 0.40,
           drawingHeightRatio: 0.20,
           panelWidthRatio: 0.5,
+          fontScale: 1.0,
         );
       case DeviceType.tablet:
         return const LayoutConfig(
           exampleHeightRatio: 0.376,
           drawingHeightRatio: 0.20,
           panelWidthRatio: 0.55,
+          fontScale: 1.0,
         );
       case DeviceType.smartphone:
       default:
@@ -33,6 +37,7 @@ class LayoutConfig {
           exampleHeightRatio: 0.26,
           drawingHeightRatio: 0.21,
           panelWidthRatio: 0.55,
+          fontScale: 1.0,
         );
     }
   }
@@ -40,6 +45,8 @@ class LayoutConfig {
 
 class DeviceConfig {
   static DeviceType deviceType = DeviceType.browser;
+  static LayoutConfig? customLayout;
 
-  static LayoutConfig get layout => LayoutConfig.forType(deviceType);
+  static LayoutConfig get layout =>
+      customLayout ?? LayoutConfig.forType(deviceType);
 }

@@ -40,6 +40,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool showPinyin = true;
   bool showTranslation = true;
   bool showTouchPanel = !kIsWeb;
+  bool showInfoText = DeviceConfig.deviceType != DeviceType.smartphone;
   bool editing = false;
 
   late final TextEditingController hanziController;
@@ -481,6 +482,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       setState(() => showTranslation = v);
                       setStateDialog(() {});
                     }),
+                    _buildToggle('Show Info Text', showInfoText, (v) {
+                      setState(() => showInfoText = v);
+                      setStateDialog(() {});
+                    }),
                     _buildToggle('Touch Panel', showTouchPanel, (v) {
                       setState(() => showTouchPanel = v);
                       setStateDialog(() {});
@@ -817,11 +822,13 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SizedBox(
-                      width: contentWidth,
-                      child: _infoColumn(recognizedLabel),
-                    ),
-                    SizedBox(height: 8),
+                    if (showInfoText) ...[
+                      SizedBox(
+                        width: contentWidth,
+                        child: _infoColumn(recognizedLabel),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     if (showTouchPanel)
                       SizedBox(
                         width: contentWidth,
@@ -907,7 +914,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 ),
               )
-            : SelectableText('Level: ${level == null || level.isEmpty ? '—' : level}'),
+            : SelectableText(
+                'Level: ${level == null || level.isEmpty ? '—' : level}',
+                style: TextStyle(
+                    fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
+              ),
         SizedBox(height: 4),
         editing
             ? Row(
@@ -927,21 +938,27 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 ],
               )
             : SelectableText(
-                'Tags: ${tags == null || tags.isEmpty ? '—' : tags.join(', ')}'),
+                'Tags: ${tags == null || tags.isEmpty ? '—' : tags.join(', ')}',
+                style: TextStyle(
+                    fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
+              ),
         SizedBox(height: 8),
         SelectableText(
           'Batch/Group: $batchLabel',
-          style: TextStyle(fontSize: UiScale.smallFont),
+          style: TextStyle(
+              fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
         ),
         SizedBox(height: 4),
         SelectableText(
           'Characters left in this $_reviewType: ${characters.length - currentIndex - 1}',
-          style: TextStyle(fontSize: UiScale.smallFont),
+          style: TextStyle(
+              fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
         ),
         SizedBox(height: 4),
         SelectableText(
           recognizedLabel,
-          style: TextStyle(fontSize: UiScale.smallFont),
+          style: TextStyle(
+              fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
         ),
       ],
     );
@@ -1005,7 +1022,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       children: [
         Text(label),
         Transform.scale(
-          scale: 0.8,
+          scale: 0.7,
           child: Switch(value: value, onChanged: onChanged),
         ),
       ],

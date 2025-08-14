@@ -136,11 +136,13 @@ class _BatchCreationScreenState extends State<BatchCreationScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Create Batch')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SafeArea(
+        bottom: true,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             DropdownButton<String?>(
               value: _selectedLevel,
               hint: const Text('All characters'),

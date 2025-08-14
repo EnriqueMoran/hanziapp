@@ -11,12 +11,14 @@ class SearchResultsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Search Results')),
-      body: ListView.separated(
-        itemCount: results.length,
-        separatorBuilder: (_, __) => const Divider(),
-        itemBuilder: (context, index) {
-          final c = results[index];
-          return ListTile(
+      body: SafeArea(
+        bottom: true,
+        child: ListView.separated(
+          itemCount: results.length,
+          separatorBuilder: (_, __) => const Divider(),
+          itemBuilder: (context, index) {
+            final c = results[index];
+            return ListTile(
             title: Text(c.character, style: TextStyle(fontSize: UiScale.tileFont)),
             subtitle: Text(c.meaning),
             onTap: () => Navigator.push(

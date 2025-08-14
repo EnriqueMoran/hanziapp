@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../layout_config.dart';
+import '../layout_preset.dart';
 import '../api/character_api.dart';
+import '../api/layout_preset_api.dart';
 import 'character_review_screen.dart';
 import 'batch_group_selection_screen.dart';
 import 'batch_creation_screen.dart';
@@ -10,6 +12,7 @@ import 'group_edit_screen.dart';
 import 'add_character_screen.dart';
 import 'delete_character_screen.dart';
 import 'search_results_screen.dart';
+import 'layout_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -20,6 +23,26 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+  List<LayoutPreset> _presets = [];
+  String? _selectedPreset;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPresets();
+  }
+
+  Future<void> _loadPresets() async {
+    final presets = await LayoutPresetApi.loadPresets();
+    final selected = await LayoutPresetApi.getSelected();
+    setState(() {
+      _presets = presets;
+      _selectedPreset = selected;
+      final p = _presets
+          .firstWhere((e) => e.name == selected, orElse: () => null);
+      DeviceConfig.customLayout = p?.toLayoutConfig();
+    });
+  }
 
   Widget _searchBox() {
     return Row(
@@ -71,6 +94,52 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+  }
+
+  Widget _layoutSelector(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButton<String>(
+            isExpanded: true,
+            value: _selectedPreset,
+            hint: const Text('Select layout'),
+            items: _presets
+                .map((p) => DropdownMenuItem(
+                      value: p.name,
+                      child: Text(p.name),
+                    ))
+                .toList(),
+            onChanged: (val) {
+              setState(() {
+                _selectedPreset = val;
+                final p = _presets
+                    .firstWhere((e) => e.name == val, orElse: () => null);
+                DeviceConfig.customLayout = p?.toLayoutConfig();
+              });
+              LayoutPresetApi.setSelected(val);
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton(
+          onPressed: () async {
+            final preset = _presets
+                .firstWhere((e) => e.name == _selectedPreset, orElse: () => null);
+            final changed = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LayoutSettingsScreen(preset: preset),
+              ),
+            );
+            if (changed == true) {
+              await _loadPresets();
+            }
+          },
+          child: const Text('Ajustes'),
+        ),
+      ],
+    );
   }
 
   /// Creates a full-width button that navigates to a new screen.
@@ -142,29 +211,34 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Hanzi App')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _searchBox(),
-            const SizedBox(height: 16),
-            _fullWidthButton(context, 'Review full vocabulary',
-                CharacterReviewScreen()),
-            _fullWidthButton(context, 'Review batches and groups',
-                const BatchGroupSelectionScreen()),
-            const SizedBox(height: 12),
-            _halfWidthButtonRow(
-              context,
-              'Create batch',
-              BatchCreationScreen(),
-              'Create group',
-              const GroupCreationScreen(),
-            ),
-            _fullWidthButton(context, 'Edit groups', const GroupEditScreen()),
-            const SizedBox(height: 12),
-            _fullWidthButton(context, 'Add character', const AddCharacterScreen()),
-            _fullWidthButton(context, 'Delete characters', const DeleteCharacterScreen()),
-          ],
+      body: SafeArea(
+        bottom: true,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _layoutSelector(context),
+              const SizedBox(height: 16),
+              _searchBox(),
+              const SizedBox(height: 16),
+              _fullWidthButton(context, 'Review full vocabulary',
+                  CharacterReviewScreen()),
+              _fullWidthButton(context, 'Review batches and groups',
+                  const BatchGroupSelectionScreen()),
+              const SizedBox(height: 12),
+              _halfWidthButtonRow(
+                context,
+                'Create batch',
+                BatchCreationScreen(),
+                'Create group',
+                const GroupCreationScreen(),
+              ),
+              _fullWidthButton(context, 'Edit groups', const GroupEditScreen()),
+              const SizedBox(height: 12),
+              _fullWidthButton(context, 'Add character', const AddCharacterScreen()),
+              _fullWidthButton(context, 'Delete characters', const DeleteCharacterScreen()),
+            ],
+          ),
         ),
       ),
     );
