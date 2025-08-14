@@ -25,8 +25,10 @@ typedef SyncProgress =
 
 class OfflineService {
   static sqflite.Database? _db;
+  static sqflite.Database? _opsDb;
   static bool isOffline = false;
   static late String _dbPath;
+  static late String _opsDbPath;
   static int _tempId = -1;
 
   static bool get isSupported =>
@@ -34,7 +36,9 @@ class OfflineService {
 
   static Future<void> init() async {
     if (!isSupported) return;
-    _dbPath = join(await sqflite.getDatabasesPath(), 'hanzi.db');
+    final basePath = await sqflite.getDatabasesPath();
+    _dbPath = join(basePath, 'hanzi.db');
+    _opsDbPath = join(basePath, 'hanzi_ops.db');
     _db = await sqflite.openDatabase(
       _dbPath,
       version: 1,
@@ -69,17 +73,23 @@ class OfflineService {
           )
         ''');
         await db.execute('''
+          CREATE TABLE settings(
+            key TEXT PRIMARY KEY,
+            value TEXT
+          )
+        ''');
+      },
+    );
+    _opsDb = await sqflite.openDatabase(
+      _opsDbPath,
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
           CREATE TABLE pending_ops(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             op_type TEXT,
             payload TEXT,
             updated_at INTEGER
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE settings(
-            key TEXT PRIMARY KEY,
-            value TEXT
           )
         ''');
       },
@@ -378,257 +388,108 @@ class OfflineService {
 
   static Future<int> syncWithServer({SyncProgress? progress}) async {
     if (!isSupported) return 0;
-    final db = _db;
-    if (db != null) {
-      final ops = await db.query('pending_ops', orderBy: 'updated_at');
-      for (int i = 0; i < ops.length; i++) {
-        progress?.call(
-          'Uploading pending operations',
-          0,
-          4,
-          currentItem: i + 1,
-          totalItems: ops.length,
-        );
-        final op = ops[i];
-        final payload = json.decode(op['payload'] as String);
-        final type = op['op_type'] as String;
-        switch (type) {
-          case 'character_create':
-            final map = Map<String, dynamic>.from(payload);
-            map.remove('id');
-            await http.post(
-              Uri.parse('${ApiConfig.baseUrl}/characters'),
-              headers: {
-                'Content-Type': 'application/json',
-                'X-API-Token': ApiConfig.apiToken,
-              },
-              body: json.encode(map),
-            );
-            break;
-          case 'character_update':
-            final c = Character.fromJson(payload);
-            await CharacterApi.updateCharacter(c);
-            break;
-          case 'character_delete':
-            await CharacterApi.deleteCharacter(payload['id'] as int);
-            break;
-          case 'group_create':
-            await GroupApi.createGroup(
-              payload['name'] as String,
-              (payload['characters'] as List).cast<int>(),
-            );
-            break;
-          case 'group_update':
-            await GroupApi.updateGroup(
-              payload['id'] as int,
-              payload['name'] as String,
-              (payload['characters'] as List).cast<int>(),
-            );
-            break;
-          case 'group_delete':
-            await GroupApi.deleteGroup(payload['id'] as int);
-            break;
-          case 'batches_save':
-            final list = (payload['batches'] as List)
-                .map((e) => Batch.fromJson(e as Map<String, dynamic>))
-                .toList();
-            await BatchApi.saveBatches(list);
-            break;
-        }
-      }
-      await db.delete('pending_ops');
-    }
+    final opsDb = _opsDb;
+    if (opsDb == null) return 0;
 
-    const totalStages = 4;
+    const totalStages = 6;
 
-    // Characters
-    progress?.call('Downloading characters', 1, totalStages);
+    // Step 1: download current data from server
+    progress?.call('Downloading remote data', 1, totalStages);
     final remoteChars = await CharacterApi.fetchAll(forceRemote: true);
-    final charMap = {
-      for (final c in remoteChars.where((c) => c.updatedAt != null)) c.id: c
-    };
-    final localChars = await getAllCharacters();
-    final toCheck = localChars
-        .where((c) => c.updatedAt != null || c.id <= 0)
-        .toList()
-      ..sort((a, b) => (a.updatedAt ?? 0).compareTo(b.updatedAt ?? 0));
-    for (int i = 0; i < toCheck.length; i++) {
-      final lc = toCheck[i];
-      if (lc.id <= 0) {
-        progress?.call(
-          'Reconciling characters',
-          1,
-          totalStages,
-          currentItem: i + 1,
-          totalItems: toCheck.length,
-        );
-        continue;
-      }
-      final rc = charMap[lc.id];
-      if (rc == null) {
-        final newId = await CharacterApi.createCharacter(lc);
-        if (newId != null) {
-          charMap[newId] = Character(
-            id: newId,
-            character: lc.character,
-            pinyin: lc.pinyin,
-            meaning: lc.meaning,
-            level: lc.level,
-            tags: lc.tags,
-            other: lc.other,
-            examples: lc.examples,
-            updatedAt: lc.updatedAt,
-          );
-        }
-      } else if (_isLocalNewer(lc.updatedAt, rc.updatedAt)) {
-        await CharacterApi.updateCharacter(lc);
-        charMap[lc.id] = lc;
-      }
-      progress?.call(
-        'Reconciling characters',
-        1,
-        totalStages,
-        currentItem: i + 1,
-        totalItems: toCheck.length,
-      );
-    }
-    await _saveCharacters(
-      charMap.values.toList(),
-      clearExisting: false,
-      progress: (msg, _, __, {int? currentItem, int? totalItems}) {
-        progress?.call(
-          msg,
-          1,
-          totalStages,
-          currentItem: currentItem,
-          totalItems: totalItems,
-        );
-      },
-    );
-
-    // Groups
-    progress?.call('Downloading groups', 2, totalStages);
     final remoteGroups = await GroupApi.fetchAll(forceRemote: true);
-    final groupMap = {
-      for (final g in remoteGroups.where((g) => g.updatedAt != null)) g.id: g
-    };
-    final localGroups = await getAllGroups();
-    final gCheck = localGroups
-        .where((g) => g.updatedAt != null || g.id <= 0)
-        .toList()
-      ..sort((a, b) => (a.updatedAt ?? 0).compareTo(b.updatedAt ?? 0));
-    for (int i = 0; i < gCheck.length; i++) {
-      final lg = gCheck[i];
-      if (lg.id <= 0) {
-        progress?.call(
-          'Reconciling groups',
-          2,
-          totalStages,
-          currentItem: i + 1,
-          totalItems: gCheck.length,
-        );
-        continue;
-      }
-      final rg = groupMap[lg.id];
-      if (rg == null) {
-        final newId = await GroupApi.createGroup(lg.name, lg.characterIds);
-        if (newId != null) {
-          groupMap[newId] = Group(
-            id: newId,
-            name: lg.name,
-            characterIds: lg.characterIds,
-            updatedAt: lg.updatedAt,
-          );
-        }
-      } else if (_isLocalNewer(lg.updatedAt, rg.updatedAt)) {
-        await GroupApi.updateGroup(lg.id, lg.name, lg.characterIds);
-        groupMap[lg.id] = lg;
-      }
-      progress?.call(
-        'Reconciling groups',
-        2,
-        totalStages,
-        currentItem: i + 1,
-        totalItems: gCheck.length,
-      );
-    }
-    await _saveGroups(
-      groupMap.values.toList(),
-      clearExisting: false,
-      progress: (msg, _, __, {int? currentItem, int? totalItems}) {
-        progress?.call(
-          msg,
-          2,
-          totalStages,
-          currentItem: currentItem,
-          totalItems: totalItems,
-        );
-      },
-    );
-
-    // Batches
-    progress?.call('Downloading batches', 3, totalStages);
     final remoteBatches = await BatchApi.fetchAll(forceRemote: true);
-    final batchMap = {
-      for (final b in remoteBatches.where((b) => b.updatedAt != null)) b.id: b
-    };
-    final localBatches = await getAllBatches();
-    final bCheck = localBatches
-        .where((b) => b.updatedAt != null || b.id <= 0)
-        .toList()
-      ..sort((a, b) => (a.updatedAt ?? 0).compareTo(b.updatedAt ?? 0));
-    for (int i = 0; i < bCheck.length; i++) {
-      final lb = bCheck[i];
-      if (lb.id <= 0) {
-        progress?.call(
-          'Reconciling batches',
-          3,
-          totalStages,
-          currentItem: i + 1,
-          totalItems: bCheck.length,
-        );
-        continue;
+    final charMap = {for (final c in remoteChars) c.id: c};
+    final groupMap = {for (final g in remoteGroups) g.id: g};
+    final batchMap = {for (final b in remoteBatches) b.id: b};
+
+    // Step 2: apply local pending operations if newer
+    final ops = await opsDb.query('pending_ops', orderBy: 'updated_at');
+    for (int i = 0; i < ops.length; i++) {
+      progress?.call('Uploading local changes', 2, totalStages,
+          currentItem: i + 1, totalItems: ops.length);
+      final op = ops[i];
+      final type = op['op_type'] as String;
+      final payload = json.decode(op['payload'] as String);
+      final opTime = op['updated_at'] as int?;
+      switch (type) {
+        case 'character_create':
+          final map = Map<String, dynamic>.from(payload);
+          map.remove('id');
+          await http.post(
+            Uri.parse('${ApiConfig.baseUrl}/characters'),
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Token': ApiConfig.apiToken,
+            },
+            body: json.encode(map),
+          );
+          break;
+        case 'character_update':
+          final c = Character.fromJson(payload);
+          final remote = charMap[c.id];
+          final localTime = c.updatedAt ?? opTime ?? 0;
+          if (remote == null || localTime > (remote.updatedAt ?? 0)) {
+            await CharacterApi.updateCharacter(c);
+          }
+          break;
+        case 'character_delete':
+          final id = payload['id'] as int;
+          final remote = charMap[id];
+          if (remote != null && (opTime ?? 0) > (remote.updatedAt ?? 0)) {
+            await CharacterApi.deleteCharacter(id);
+            charMap.remove(id);
+          }
+          break;
+        case 'group_create':
+          await GroupApi.createGroup(
+            payload['name'] as String,
+            (payload['characters'] as List).cast<int>(),
+          );
+          break;
+        case 'group_update':
+          final gid = payload['id'] as int;
+          final remote = groupMap[gid];
+          final localTime = payload['updated_at'] as int? ?? opTime ?? 0;
+          if (remote == null || localTime > (remote.updatedAt ?? 0)) {
+            await GroupApi.updateGroup(
+              gid,
+              payload['name'] as String,
+              (payload['characters'] as List).cast<int>(),
+            );
+          }
+          break;
+        case 'group_delete':
+          final gid = payload['id'] as int;
+          final remote = groupMap[gid];
+          if (remote != null && (opTime ?? 0) > (remote.updatedAt ?? 0)) {
+            await GroupApi.deleteGroup(gid);
+            groupMap.remove(gid);
+          }
+          break;
+        case 'batches_save':
+          final list = (payload['batches'] as List)
+              .map((e) => Batch.fromJson(e as Map<String, dynamic>))
+              .toList();
+          for (final b in list) {
+            final remote = batchMap[b.id];
+            final localTime = b.updatedAt ?? opTime ?? 0;
+            if (remote == null || localTime > (remote.updatedAt ?? 0)) {
+              await BatchApi.saveBatches([b]);
+            }
+          }
+          break;
       }
-      final rb = batchMap[lb.id];
-      if (rb == null) {
-        await BatchApi.saveBatches([lb]);
-        batchMap[lb.id] = lb;
-      } else if (_isLocalNewer(lb.updatedAt, rb.updatedAt)) {
-        await BatchApi.saveBatches([lb]);
-        batchMap[lb.id] = lb;
-      }
-      progress?.call(
-        'Reconciling batches',
-        3,
-        totalStages,
-        currentItem: i + 1,
-        totalItems: bCheck.length,
-      );
     }
-    await _saveBatches(
-      batchMap.values.toList(),
-      clearExisting: false,
-      progress: (msg, _, __, {int? currentItem, int? totalItems}) {
-        progress?.call(
-          msg,
-          3,
-          totalStages,
-          currentItem: currentItem,
-          totalItems: totalItems,
-        );
+
+    // Step 3: download updated database from server and save locally
+    final size = await downloadAll(
+      progress: (msg, stage, total, {int? currentItem, int? totalItems}) {
+        progress?.call(msg, stage + 2, totalStages,
+            currentItem: currentItem, totalItems: totalItems);
       },
     );
 
-    // Layout presets
-    progress?.call('Downloading layouts', 4, totalStages);
-    const presetKey = 'layout_presets';
-    const selectedKey = 'selected_layout_preset';
-    final presetStr = await SettingsApi.getString(presetKey);
-    await setSetting(presetKey, presetStr);
-    final sel = await SettingsApi.getString(selectedKey);
-    await setSetting(selectedKey, sel);
-
-    final size = await File(_dbPath).length();
+    await opsDb.delete('pending_ops');
     return size;
   }
 
@@ -637,18 +498,12 @@ class OfflineService {
     Map<String, dynamic> payload,
   ) async {
     if (!isSupported) return;
-    final db = _db;
+    final db = _opsDb;
     if (db == null) return;
     await db.insert('pending_ops', {
       'op_type': type,
       'payload': json.encode(payload),
       'updated_at': DateTime.now().millisecondsSinceEpoch,
     });
-  }
-
-  static bool _isLocalNewer(int? local, int? remote) {
-    if (remote == null) return true;
-    if (local == null) return true;
-    return local > remote;
   }
 }
