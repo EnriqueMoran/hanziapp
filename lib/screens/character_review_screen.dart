@@ -22,8 +22,9 @@ class CharacterReviewScreen extends StatefulWidget {
   final VoidCallback? onSaveLayout;
   final VoidCallback? onDeleteLayout;
   final VoidCallback? onLoadLayout;
-  final double? fontScaleValue;
-  final ValueChanged<double>? onFontScaleChanged;
+  final VoidCallback? onNewLayout;
+  final double? fontSizeValue;
+  final ValueChanged<double>? onFontSizeChanged;
   final VoidCallback? onSettingsPressed;
 
   const CharacterReviewScreen({
@@ -39,8 +40,9 @@ class CharacterReviewScreen extends StatefulWidget {
     this.onSaveLayout,
     this.onDeleteLayout,
     this.onLoadLayout,
-    this.fontScaleValue,
-    this.onFontScaleChanged,
+    this.onNewLayout,
+    this.fontSizeValue,
+    this.onFontSizeChanged,
     this.onSettingsPressed,
   }) : super(key: key);
 
@@ -82,6 +84,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   Timer? recognizeDebounce;
   String recognizerStatus = 'verifying model...';
   bool modelReady = false;
+  TextEditingController? fontSizeController;
 
   final AudioPlayer player = AudioPlayer();
   bool hasAudio = false;
@@ -129,6 +132,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     examplesController = TextEditingController();
     levelController = TextEditingController();
     tagsController = TextEditingController();
+    if (widget.layoutMode) {
+      showTouchPanel = true;
+      fontSizeController =
+          TextEditingController(text: widget.fontSizeValue?.toStringAsFixed(0));
+    }
     CharacterApi.fetchTags().then((tags) {
       if (mounted) setState(() => allTags = tags);
     });
@@ -182,8 +190,20 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     examplesController.dispose();
     levelController.dispose();
     tagsController.dispose();
+    fontSizeController?.dispose();
     recognizeDebounce?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant CharacterReviewScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.layoutMode) {
+      final txt = widget.fontSizeValue?.toStringAsFixed(0) ?? '';
+      if (fontSizeController != null && fontSizeController!.text != txt) {
+        fontSizeController!.text = txt;
+      }
+    }
   }
 
   void clearDrawing() => setState(() {
@@ -554,9 +574,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final drawingHeight = screenH * layout.drawingHeightRatio;
     final contentWidth = screenW - 48;
     final double detailFontSize =
-        DeviceConfig.deviceType == DeviceType.tablet
-            ? UiScale.detailFont * 1.5
-            : UiScale.detailFont;
+        (DeviceConfig.deviceType == DeviceType.tablet
+                ? UiScale.detailFont * 1.5
+                : UiScale.detailFont) *
+            layout.fontScale;
 
     final previewBox = Column(
       mainAxisSize: MainAxisSize.min,
@@ -779,19 +800,40 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                           onPressed: widget.onLoadLayout,
                           child: Text('LOAD LAYOUT'),
                         ),
-                        DropdownButton<double>(
-                          value: widget.fontScaleValue,
-                          items: const [
-                            DropdownMenuItem(
-                                value: 0.8, child: Text('Small')),
-                            DropdownMenuItem(
-                                value: 1.0, child: Text('Normal')),
-                            DropdownMenuItem(
-                                value: 1.2, child: Text('Large')),
-                            DropdownMenuItem(
-                                value: 1.5, child: Text('XL')),
+                        ElevatedButton(
+                          onPressed: widget.onNewLayout,
+                          child: Text('NEW LAYOUT'),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Font size'),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 60,
+                              child: TextField(
+                                controller: fontSizeController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(isDense: true),
+                                onChanged: (v) {
+                                  final n = double.tryParse(v);
+                                  if (n != null) {
+                                    final clamped = n.clamp(8, 32);
+                                    if (clamped != n) {
+                                      fontSizeController!.text =
+                                          clamped.toStringAsFixed(0);
+                                      fontSizeController!.selection =
+                                          TextSelection.fromPosition(
+                                              TextPosition(
+                                                  offset: fontSizeController!
+                                                      .text.length));
+                                    }
+                                    widget.onFontSizeChanged?.call(clamped);
+                                  }
+                                },
+                              ),
+                            ),
                           ],
-                          onChanged: widget.onFontScaleChanged,
                         ),
                       ],
                     ),

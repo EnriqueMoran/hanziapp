@@ -4,6 +4,7 @@ import '../api/character_api.dart';
 import '../api/layout_preset_api.dart';
 import '../layout_config.dart';
 import '../layout_preset.dart';
+import '../ui_scale.dart';
 import 'character_review_screen.dart';
 
 class LayoutSettingsScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
   late double _exampleHeight;
   late double _drawingHeight;
   late double _panelWidth;
-  late double _fontScale;
+  late double _fontSize;
   Character? _character;
   LayoutConfig? _previousLayout;
 
@@ -32,14 +33,14 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _exampleHeight = p.exampleHeightRatio;
       _drawingHeight = p.drawingHeightRatio;
       _panelWidth = p.panelWidthRatio;
-      _fontScale = p.fontScale;
+      _fontSize = UiScale.smallFont * p.fontScale;
     } else {
       final layout = DeviceConfig.layout;
       _nameController = TextEditingController();
       _exampleHeight = layout.exampleHeightRatio;
       _drawingHeight = layout.drawingHeightRatio;
       _panelWidth = layout.panelWidthRatio;
-      _fontScale = layout.fontScale;
+      _fontSize = UiScale.smallFont * layout.fontScale;
     }
     _previousLayout = DeviceConfig.customLayout;
     CharacterApi.fetchAll().then((list) {
@@ -61,7 +62,7 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       exampleHeightRatio: _exampleHeight,
       drawingHeightRatio: _drawingHeight,
       panelWidthRatio: _panelWidth,
-      fontScale: _fontScale,
+      fontScale: _fontSize / UiScale.smallFont,
     );
   }
 
@@ -71,7 +72,7 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Adjust layout'),
         content: StatefulBuilder(
-          builder: (ctx, setState) => Column(
+          builder: (ctx, dialogSetState) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('Examples height'),
@@ -79,21 +80,39 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                 value: _exampleHeight,
                 min: 0.1,
                 max: 0.5,
-                onChanged: (v) => setState(() => _exampleHeight = v),
+                onChanged: (v) {
+                  dialogSetState(() => _exampleHeight = v);
+                  setState(() {
+                    _exampleHeight = v;
+                    _updateLayout();
+                  });
+                },
               ),
               const Text('Touch panel height'),
               Slider(
                 value: _drawingHeight,
                 min: 0.1,
                 max: 0.5,
-                onChanged: (v) => setState(() => _drawingHeight = v),
+                onChanged: (v) {
+                  dialogSetState(() => _drawingHeight = v);
+                  setState(() {
+                    _drawingHeight = v;
+                    _updateLayout();
+                  });
+                },
               ),
               const Text('Panel width'),
               Slider(
                 value: _panelWidth,
                 min: 0.3,
                 max: 0.7,
-                onChanged: (v) => setState(() => _panelWidth = v),
+                onChanged: (v) {
+                  dialogSetState(() => _panelWidth = v);
+                  setState(() {
+                    _panelWidth = v;
+                    _updateLayout();
+                  });
+                },
               ),
             ],
           ),
@@ -144,7 +163,7 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       exampleHeightRatio: _exampleHeight,
       drawingHeightRatio: _drawingHeight,
       panelWidthRatio: _panelWidth,
-      fontScale: _fontScale,
+      fontScale: _fontSize / UiScale.smallFont,
     );
     final list = await LayoutPresetApi.loadPresets();
     list.removeWhere((p) => p.name == widget.preset?.name);
@@ -205,10 +224,22 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
         _exampleHeight = selected.exampleHeightRatio;
         _drawingHeight = selected.drawingHeightRatio;
         _panelWidth = selected.panelWidthRatio;
-        _fontScale = selected.fontScale;
+        _fontSize = UiScale.smallFont * selected.fontScale;
         _updateLayout();
       });
     }
+  }
+
+  void _newLayout() {
+    final layout = LayoutConfig.forType(DeviceConfig.deviceType);
+    setState(() {
+      _nameController.clear();
+      _exampleHeight = layout.exampleHeightRatio;
+      _drawingHeight = layout.drawingHeightRatio;
+      _panelWidth = layout.panelWidthRatio;
+      _fontSize = UiScale.smallFont * layout.fontScale;
+      _updateLayout();
+    });
   }
 
   @override
@@ -226,9 +257,10 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       onSaveLayout: _save,
       onDeleteLayout: widget.preset != null ? _delete : null,
       onLoadLayout: _loadPreset,
-      fontScaleValue: _fontScale,
-      onFontScaleChanged: (v) {
-        setState(() => _fontScale = v);
+      onNewLayout: _newLayout,
+      fontSizeValue: _fontSize,
+      onFontSizeChanged: (v) {
+        setState(() => _fontSize = v);
         _updateLayout();
       },
       onSettingsPressed: _openAdjustDialog,
