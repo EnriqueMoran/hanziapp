@@ -29,12 +29,15 @@ LayoutPreset? _findPresetByName(List<LayoutPreset> presets, String? name) {
   return null;
 }
 
+enum ConnectionStatus { unknown, online, offline }
+
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<LayoutPreset> _presets = [];
   String? _selectedPreset;
   bool _loading = true;
-  bool _offline = false;
+  ConnectionStatus _status = ConnectionStatus.unknown;
+  String _statusMessage = '';
 
   @override
   void initState() {
@@ -43,13 +46,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _startup() async {
+    setState(() {
+      _statusMessage = 'Loading presets...';
+    });
     await _loadPresets();
     if (OfflineService.isSupported) {
       await _sync(initial: true);
     } else {
       setState(() {
         _loading = false;
-        _offline = false;
+        _status = ConnectionStatus.online;
+        _statusMessage = '';
       });
     }
   }
@@ -155,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
               await _loadPresets();
             }
           },
-          child: const Text('Ajustes'),
+          child: const Text('Settings'),
         ),
       ],
     );
@@ -222,16 +229,47 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!OfflineService.isSupported) return;
     setState(() {
       _loading = true;
+      _statusMessage = 'Checking server connection...';
     });
-    final hasConn = await OfflineService.hasConnection();
+    final hasConn =
+        await OfflineService.hasConnection(timeout: const Duration(seconds: 2));
     OfflineService.isOffline = !hasConn;
     if (hasConn) {
-      await OfflineService.syncWithServer();
+      setState(() {
+        _statusMessage = 'Synchronizing data...';
+      });
+      final bytes = await OfflineService.syncWithServer();
+      await _loadPresets();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sync complete (${_formatBytes(bytes)})')),
+        );
+      }
+      setState(() {
+        _status = ConnectionStatus.online;
+      });
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No server connection. Offline mode.')),
+        );
+      }
+      setState(() {
+        _status = ConnectionStatus.offline;
+      });
     }
     setState(() {
       _loading = false;
-      _offline = !hasConn;
+      _statusMessage = '';
     });
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    final kb = bytes / 1024;
+    if (kb < 1024) return '${kb.toStringAsFixed(1)} KB';
+    final mb = kb / 1024;
+    return '${mb.toStringAsFixed(1)} MB';
   }
 
   @override
@@ -255,7 +293,11 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 12,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _offline ? Colors.orange : Colors.green,
+                color: _status == ConnectionStatus.online
+                    ? Colors.green
+                    : (_status == ConnectionStatus.offline
+                        ? Colors.orange
+                        : Colors.red),
               ),
             ),
           )
@@ -274,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (OfflineService.isSupported) ...[
                       ElevatedButton(
                         onPressed: () => _sync(),
-                        child: const Text('Sincronizar'),
+                        child: const Text('Sync'),
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -304,7 +346,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               if (_loading)
-                const Center(child: CircularProgressIndicator()),
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(_statusMessage),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),

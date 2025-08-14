@@ -1,24 +1,29 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../api/api_config.dart';
 import '../api/character_api.dart';
 
 class OfflineService {
   static Database? _db;
   static bool isOffline = false;
+  static late String _dbPath;
 
   static bool get isSupported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   static Future<void> init() async {
     if (!isSupported) return;
-    final path = join(await getDatabasesPath(), 'hanzi.db');
+    _dbPath = join(await getDatabasesPath(), 'hanzi.db');
     _db = await openDatabase(
-      path,
+      _dbPath,
       version: 1,
       onCreate: (db, version) async {
         await db.execute('''
@@ -95,20 +100,29 @@ class OfflineService {
     await batch.commit(noResult: true);
   }
 
-  static Future<void> downloadAll() async {
-    if (!isSupported) return;
+  static Future<int> downloadAll() async {
+    if (!isSupported) return 0;
     final remote = await CharacterApi.fetchAll(forceRemote: true);
     await _saveCharacters(remote);
+    return await File(_dbPath).length();
   }
 
-  static Future<bool> hasConnection() async {
+  static Future<bool> hasConnection({Duration timeout = const Duration(seconds: 3)}) async {
     if (!isSupported) return false;
     final result = await Connectivity().checkConnectivity();
-    return result != ConnectivityResult.none;
+    if (result == ConnectivityResult.none) return false;
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.baseUrl}/ping'))
+          .timeout(timeout);
+      return resp.statusCode < 500;
+    } catch (_) {
+      return false;
+    }
   }
 
-  static Future<void> syncWithServer() async {
-    if (!isSupported) return;
+  static Future<int> syncWithServer() async {
+    if (!isSupported) return 0;
     final db = _db;
     if (db != null) {
       final ops = await db.query('pending_ops', orderBy: 'updated_at');
@@ -126,7 +140,7 @@ class OfflineService {
       }
       await db.delete('pending_ops');
     }
-    await downloadAll();
+    return await downloadAll();
   }
 
   static Future<void> queueOperation(String type, Character c) async {
