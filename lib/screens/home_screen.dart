@@ -4,6 +4,8 @@ import '../layout_config.dart';
 import '../layout_preset.dart';
 import '../api/character_api.dart';
 import '../api/layout_preset_api.dart';
+import '../offline/offline_service.dart';
+import 'dart:io' show Platform;
 import 'character_review_screen.dart';
 import 'batch_group_selection_screen.dart';
 import 'batch_creation_screen.dart';
@@ -32,11 +34,25 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<LayoutPreset> _presets = [];
   String? _selectedPreset;
+  bool _loading = true;
+  bool _offline = false;
 
   @override
   void initState() {
     super.initState();
-    _loadPresets();
+    _startup();
+  }
+
+  Future<void> _startup() async {
+    await _loadPresets();
+    if (Platform.isAndroid) {
+      await _sync(initial: true);
+    } else {
+      setState(() {
+        _loading = false;
+        _offline = false;
+      });
+    }
   }
 
   Future<void> _loadPresets() async {
@@ -203,6 +219,21 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Future<void> _sync({bool initial = false}) async {
+    setState(() {
+      _loading = true;
+    });
+    final hasConn = await OfflineService.hasConnection();
+    OfflineService.isOffline = !hasConn;
+    if (hasConn) {
+      await OfflineService.syncWithServer();
+    }
+    setState(() {
+      _loading = false;
+      _offline = !hasConn;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -214,33 +245,64 @@ class _HomeScreenState extends State<HomeScreen> {
       DeviceConfig.deviceType = DeviceType.smartphone;
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Hanzi App')),
+      appBar: AppBar(
+        title: const Text('Hanzi App'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _offline ? Colors.orange : Colors.green,
+              ),
+            ),
+          )
+        ],
+      ),
       body: SafeArea(
         bottom: true,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
+          child: Stack(
             children: [
-              _layoutSelector(context),
-              const SizedBox(height: 16),
-              _searchBox(),
-              const SizedBox(height: 16),
-              _fullWidthButton(context, 'Review full vocabulary',
-                  CharacterReviewScreen()),
-              _fullWidthButton(context, 'Review batches and groups',
-                  const BatchGroupSelectionScreen()),
-              const SizedBox(height: 12),
-              _halfWidthButtonRow(
-                context,
-                'Create batch',
-                BatchCreationScreen(),
-                'Create group',
-                const GroupCreationScreen(),
+              AbsorbPointer(
+                absorbing: _loading,
+                child: Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => _sync(),
+                      child: const Text('Sincronizar'),
+                    ),
+                    const SizedBox(height: 16),
+                    _layoutSelector(context),
+                    const SizedBox(height: 16),
+                    _searchBox(),
+                    const SizedBox(height: 16),
+                    _fullWidthButton(context, 'Review full vocabulary',
+                        CharacterReviewScreen()),
+                    _fullWidthButton(context, 'Review batches and groups',
+                        const BatchGroupSelectionScreen()),
+                    const SizedBox(height: 12),
+                    _halfWidthButtonRow(
+                      context,
+                      'Create batch',
+                      BatchCreationScreen(),
+                      'Create group',
+                      const GroupCreationScreen(),
+                    ),
+                    _fullWidthButton(context, 'Edit groups', const GroupEditScreen()),
+                    const SizedBox(height: 12),
+                    _fullWidthButton(
+                        context, 'Add character', const AddCharacterScreen()),
+                    _fullWidthButton(context, 'Delete characters',
+                        const DeleteCharacterScreen()),
+                  ],
+                ),
               ),
-              _fullWidthButton(context, 'Edit groups', const GroupEditScreen()),
-              const SizedBox(height: 12),
-              _fullWidthButton(context, 'Add character', const AddCharacterScreen()),
-              _fullWidthButton(context, 'Delete characters', const DeleteCharacterScreen()),
+              if (_loading)
+                const Center(child: CircularProgressIndicator()),
             ],
           ),
         ),
