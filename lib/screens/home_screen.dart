@@ -5,7 +5,6 @@ import '../layout_preset.dart';
 import '../api/character_api.dart';
 import '../api/layout_preset_api.dart';
 import '../offline/offline_service.dart';
-import 'dart:io' show Platform;
 import 'character_review_screen.dart';
 import 'batch_group_selection_screen.dart';
 import 'batch_creation_screen.dart';
@@ -45,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _startup() async {
     await _loadPresets();
-    if (Platform.isAndroid) {
+    if (OfflineService.isSupported) {
       await _sync(initial: true);
     } else {
       setState(() {
@@ -220,6 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _sync({bool initial = false}) async {
+    if (!OfflineService.isSupported) return;
     setState(() {
       _loading = true;
     });
@@ -271,11 +271,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 absorbing: _loading,
                 child: Column(
                   children: [
-                    ElevatedButton(
-                      onPressed: () => _sync(),
-                      child: const Text('Sincronizar'),
-                    ),
-                    const SizedBox(height: 16),
+                    if (OfflineService.isSupported) ...[
+                      ElevatedButton(
+                        onPressed: () => _sync(),
+                        child: const Text('Sincronizar'),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     _layoutSelector(context),
                     const SizedBox(height: 16),
                     _searchBox(),

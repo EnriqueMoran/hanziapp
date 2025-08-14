@@ -1,9 +1,9 @@
-import 'dart:io' show Platform;
+import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'dart:convert';
 
 import '../api/character_api.dart';
 
@@ -11,7 +11,11 @@ class OfflineService {
   static Database? _db;
   static bool isOffline = false;
 
+  static bool get isSupported =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
   static Future<void> init() async {
+    if (!isSupported) return;
     final path = join(await getDatabasesPath(), 'hanzi.db');
     _db = await openDatabase(
       path,
@@ -43,6 +47,7 @@ class OfflineService {
   }
 
   static Future<List<Character>> getAllCharacters() async {
+    if (!isSupported) return [];
     final db = _db;
     if (db == null) return [];
     final maps = await db.query('characters');
@@ -66,6 +71,7 @@ class OfflineService {
   }
 
   static Future<void> _saveCharacters(List<Character> chars) async {
+    if (!isSupported) return;
     final db = _db;
     if (db == null) return;
     final batch = db.batch();
@@ -90,19 +96,19 @@ class OfflineService {
   }
 
   static Future<void> downloadAll() async {
+    if (!isSupported) return;
     final remote = await CharacterApi.fetchAll(forceRemote: true);
     await _saveCharacters(remote);
   }
 
   static Future<bool> hasConnection() async {
-    if (Platform.isAndroid) {
-      final result = await Connectivity().checkConnectivity();
-      return result != ConnectivityResult.none;
-    }
-    return false;
+    if (!isSupported) return false;
+    final result = await Connectivity().checkConnectivity();
+    return result != ConnectivityResult.none;
   }
 
   static Future<void> syncWithServer() async {
+    if (!isSupported) return;
     final db = _db;
     if (db != null) {
       final ops = await db.query('pending_ops', orderBy: 'updated_at');
@@ -124,6 +130,7 @@ class OfflineService {
   }
 
   static Future<void> queueOperation(String type, Character c) async {
+    if (!isSupported) return;
     final db = _db;
     if (db == null) return;
     await db.insert('pending_ops', {

@@ -55,7 +55,9 @@ class CharacterApi {
   static const String baseUrl = ApiConfig.baseUrl;
 
   static Future<List<Character>> fetchAll({bool forceRemote = false}) async {
-    if (!forceRemote && OfflineService.isOffline) {
+    if (!forceRemote &&
+        OfflineService.isSupported &&
+        OfflineService.isOffline) {
       return OfflineService.getAllCharacters();
     }
     try {
@@ -67,13 +69,17 @@ class CharacterApi {
         final List list = json.decode(response.body);
         return list.map((e) => Character.fromJson(e)).toList();
       }
-    } catch (_) {}
-    OfflineService.isOffline = true;
-    return OfflineService.getAllCharacters();
+    } catch (_) {
+      if (OfflineService.isSupported) {
+        OfflineService.isOffline = true;
+        return OfflineService.getAllCharacters();
+      }
+    }
+    return [];
   }
 
   static Future<Character?> fetchCharacter(String char) async {
-    if (OfflineService.isOffline) {
+    if (OfflineService.isSupported && OfflineService.isOffline) {
       final all = await OfflineService.getAllCharacters();
       try {
         return all.firstWhere((c) => c.character == char);
@@ -93,7 +99,7 @@ class CharacterApi {
   }
 
   static Future<void> updateCharacter(Character c) async {
-    if (OfflineService.isOffline) {
+    if (OfflineService.isSupported && OfflineService.isOffline) {
       await OfflineService.queueOperation('update', c);
       return;
     }
@@ -108,7 +114,7 @@ class CharacterApi {
   }
 
   static Future<void> deleteCharacter(int id) async {
-    if (OfflineService.isOffline) {
+    if (OfflineService.isSupported && OfflineService.isOffline) {
       final c = Character(
         id: id,
         character: '',
@@ -129,7 +135,7 @@ class CharacterApi {
   }
 
   static Future<int?> createCharacter(Character c) async {
-    if (OfflineService.isOffline) {
+    if (OfflineService.isSupported && OfflineService.isOffline) {
       await OfflineService.queueOperation('create', c);
       return null;
     }

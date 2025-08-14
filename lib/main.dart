@@ -4,6 +4,8 @@ import 'offline/offline_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await OfflineService.init();
+  if (OfflineService.isSupported) {
+    await OfflineService.init();
+  }
   runApp(const HanziApp());
 }
