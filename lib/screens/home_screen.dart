@@ -263,14 +263,21 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     );
     OfflineService.isOffline = !hasConn;
     if (hasConn) {
-      setState(() {
-        _statusMessage = 'Synchronizing data...';
-      });
-      final bytes = await OfflineService.syncWithServer();
+      final dbSize = await OfflineService.syncWithServer(
+        progress: (msg, current, total, {int? items, int? bytes}) {
+          if (!mounted) return;
+          setState(() {
+            var text = '$msg ($current/$total)';
+            if (items != null) text += ' - $items items';
+            if (bytes != null) text += ' - ${_formatBytes(bytes)}';
+            _statusMessage = text;
+          });
+        },
+      );
       await _loadPresets();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sync complete (${_formatBytes(bytes)})')),
+          SnackBar(content: Text('Sync complete (${_formatBytes(dbSize)})')),
         );
       }
       setState(() {

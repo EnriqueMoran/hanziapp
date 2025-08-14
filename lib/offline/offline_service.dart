@@ -13,6 +13,14 @@ import '../api/character_api.dart';
 import '../api/group_api.dart';
 import '../api/batch_api.dart' show Batch, BatchApi;
 
+typedef SyncProgress = void Function(
+  String message,
+  int current,
+  int total, {
+  int? items,
+  int? bytes,
+});
+
 class OfflineService {
   static sqflite.Database? _db;
   static bool isOffline = false;
@@ -238,15 +246,28 @@ class OfflineService {
     await _saveBatches(batches, clearExisting: true);
   }
 
-  static Future<int> downloadAll() async {
+  static Future<int> downloadAll({SyncProgress? progress}) async {
     if (!isSupported) return 0;
+    const total = 3;
     final chars = await CharacterApi.fetchAll(forceRemote: true);
-    final groups = await GroupApi.fetchAll(forceRemote: true);
-    final batches = await BatchApi.fetchAll(forceRemote: true);
     await _saveCharacters(chars, clearExisting: true);
+    var size = await File(_dbPath).length();
+    progress?.call('Characters synced', 1, total,
+        items: chars.length, bytes: size);
+
+    final groups = await GroupApi.fetchAll(forceRemote: true);
     await _saveGroups(groups, clearExisting: true);
+    size = await File(_dbPath).length();
+    progress?.call('Groups synced', 2, total,
+        items: groups.length, bytes: size);
+
+    final batches = await BatchApi.fetchAll(forceRemote: true);
     await _saveBatches(batches, clearExisting: true);
-    return await File(_dbPath).length();
+    size = await File(_dbPath).length();
+    progress?.call('Batches synced', 3, total,
+        items: batches.length, bytes: size);
+
+    return size;
   }
 
   static Future<bool> hasConnection({
@@ -265,10 +286,11 @@ class OfflineService {
     }
   }
 
-  static Future<int> syncWithServer() async {
+  static Future<int> syncWithServer({SyncProgress? progress}) async {
     if (!isSupported) return 0;
     final db = _db;
     if (db != null) {
+      progress?.call('Uploading pending operations', 0, 4);
       final ops = await db.query('pending_ops', orderBy: 'updated_at');
       for (final op in ops) {
         final payload = json.decode(op['payload'] as String);
@@ -319,7 +341,11 @@ class OfflineService {
       }
       await db.delete('pending_ops');
     }
-    return await downloadAll();
+    return await downloadAll(progress: (msg, current, total,
+        {int? items, int? bytes}) {
+      progress?.call(msg, current + 1, total + 1,
+          items: items, bytes: bytes);
+    });
   }
 
   static Future<void> queueOperation(
