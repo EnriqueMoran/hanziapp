@@ -816,7 +816,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(child: _infoColumn()),
+                          _infoColumn(),
+                          SizedBox(width: 8),
                           SizedBox(
                             width: panelWidth,
                             child: GestureDetector(
@@ -952,54 +953,56 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   }
 
   Widget _infoColumn() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        editing
-            ? SizedBox(
-                width: 180,
-                child: TextField(
-                  controller: levelController,
-                  decoration: InputDecoration(
-                    labelText: 'Level',
-                    isDense: true,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  ),
-                ),
-              )
-            : SelectableText('Level: ${current?.level ?? ''}'),
-        SizedBox(height: 4),
-        editing
-            ? Row(
-                children: [
-                  SizedBox(
-                    width: 180,
-                    child: TextField(
-                      controller: tagsController,
-                      decoration: InputDecoration(
-                        labelText: 'Tags',
-                        isDense: true,
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      ),
+    return SizedBox(
+      width: UiScale.controlsWidth,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          editing
+              ? SizedBox(
+                  width: UiScale.controlsWidth,
+                  child: TextField(
+                    controller: levelController,
+                    decoration: InputDecoration(
+                      labelText: 'Level',
+                      isDense: true,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     ),
                   ),
-                  IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
-                ],
-              )
-            : SelectableText('Tags: ${current?.tags.join(', ')}'),
-        SizedBox(height: 8),
-        SelectableText(
-          'Batch/Group: $batchLabel',
-          style: TextStyle(fontSize: UiScale.smallFont),
-        ),
-        SizedBox(height: 4),
-        SelectableText(
-          'Characters left in this $_reviewType: ${characters.length - currentIndex - 1}',
-          style: TextStyle(fontSize: UiScale.smallFont),
-        ),
-      ],
+                )
+              : SelectableText('Level: ${current?.level ?? ''}'),
+          SizedBox(height: 4),
+          editing
+              ? Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: tagsController,
+                        decoration: InputDecoration(
+                          labelText: 'Tags',
+                          isDense: true,
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        ),
+                      ),
+                    ),
+                    IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
+                  ],
+                )
+              : SelectableText('Tags: ${current?.tags.join(', ')}'),
+          SizedBox(height: 8),
+          SelectableText(
+            'Batch/Group: $batchLabel',
+            style: TextStyle(fontSize: UiScale.smallFont),
+          ),
+          SizedBox(height: 4),
+          SelectableText(
+            'Characters left in this $_reviewType: ${characters.length - currentIndex - 1}',
+            style: TextStyle(fontSize: UiScale.smallFont),
+          ),
+        ],
+      ),
     );
   }
 
