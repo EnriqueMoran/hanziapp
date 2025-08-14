@@ -6,15 +6,15 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 import '../api/api_config.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
-import '../api/batch_api.dart';
+import '../api/batch_api.dart' show Batch, BatchApi;
 
 class OfflineService {
-  static Database? _db;
+  static sqflite.Database? _db;
   static bool isOffline = false;
   static late String _dbPath;
   static int _tempId = -1;
@@ -24,8 +24,8 @@ class OfflineService {
 
   static Future<void> init() async {
     if (!isSupported) return;
-    _dbPath = join(await getDatabasesPath(), 'hanzi.db');
-    _db = await openDatabase(
+    _dbPath = join(await sqflite.getDatabasesPath(), 'hanzi.db');
+    _db = await sqflite.openDatabase(
       _dbPath,
       version: 1,
       onCreate: (db, version) async {
@@ -116,7 +116,7 @@ class OfflineService {
         'other': c.other,
         'examples': c.examples,
         'updated_at': DateTime.now().millisecondsSinceEpoch,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+        }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
     }
     await batch.commit(noResult: true);
   }
@@ -158,7 +158,7 @@ class OfflineService {
         'name': g.name,
         'characters': g.characterIds.join(','),
         'updated_at': DateTime.now().millisecondsSinceEpoch,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+        }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
     }
     await batch.commit(noResult: true);
   }
@@ -199,7 +199,7 @@ class OfflineService {
         'name': b.name,
         'characters': b.characters.join(','),
         'updated_at': DateTime.now().millisecondsSinceEpoch,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+        }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
     }
     await batch.commit(noResult: true);
   }
