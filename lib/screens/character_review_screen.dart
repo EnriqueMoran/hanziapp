@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
+import '../api/batch_api.dart';
 import '../api/settings_api.dart';
 import '../api/api_config.dart';
 import '../ui_scale.dart';
@@ -74,6 +75,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   final AudioPlayer player = AudioPlayer();
   bool hasAudio = false;
   List<Group> groups = [];
+  List<Batch> batches = [];
   bool addingToGroup = false;
   int? selectedGroupId;
 
@@ -137,16 +139,20 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       if (mounted) setState(() => allTags = tags);
     });
     GroupApi.fetchAll().then((list) {
-      if (mounted) setState(() => groups = list);
+      if (!mounted) return;
+      setState(() => groups = list);
+      _updateBatchLabel();
+    });
+    BatchApi.fetchAll().then((list) {
+      if (!mounted) return;
+      setState(() => batches = list);
+      _updateBatchLabel();
     });
     _checkConnection();
     _connectionTimer =
         Timer.periodic(const Duration(seconds: 30), (_) => _checkConnection());
     if (widget.initialCharacters != null) {
       characters = List.of(widget.initialCharacters!);
-      batchLabel = widget.batchValue != null && widget.batchValue!.isNotEmpty
-          ? widget.batchValue!
-          : 'None';
       if (widget.recordHistory) {
         loadInitialIndex();
       } else {
@@ -156,6 +162,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           if (autoSound && hasAudio) playAudio();
         }
       }
+      _updateBatchLabel();
     } else {
       CharacterApi.fetchAll().then((list) async {
         if (!mounted) return;
@@ -176,6 +183,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
           checkAudioAvailable();
           if (autoSound && hasAudio) playAudio();
         }
+        _updateBatchLabel();
       });
     }
   }
@@ -201,6 +209,25 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     recognizedText = '';
     recognizedScore = null;
   });
+
+  void _updateBatchLabel() {
+    if (!mounted) return;
+    final c = current;
+    if (c == null) {
+      setState(() => batchLabel = 'None');
+      return;
+    }
+    final names = <String>{};
+    for (final b in batches) {
+      if (b.characters.contains(c.character)) names.add(b.name);
+    }
+    for (final g in groups) {
+      if (g.characterIds.contains(c.id)) names.add(g.name);
+    }
+    setState(() {
+      batchLabel = names.isEmpty ? 'None' : names.join(', ');
+    });
+  }
 
   Future<void> chooseTag() async {
     if (allTags.isEmpty) return;
@@ -305,6 +332,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         currentIndex--;
         clearDrawing();
       });
+      _updateBatchLabel();
       if (widget.recordHistory) {
         updateLastCharacter(current!.id);
       }
@@ -319,6 +347,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         currentIndex++;
         clearDrawing();
       });
+      _updateBatchLabel();
       if (widget.recordHistory) {
         updateLastCharacter(current!.id);
       }
@@ -334,6 +363,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         characters.removeAt(currentIndex);
         currentIndex = currentIndex.clamp(0, characters.length - 1);
       });
+      _updateBatchLabel();
       if (characters.isNotEmpty) {
         if (widget.recordHistory) {
           updateLastCharacter(current!.id);
@@ -437,7 +467,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       selectedGroupId = null;
     });
     GroupApi.fetchAll().then((list) {
-      if (mounted) setState(() => groups = list);
+      if (!mounted) return;
+      setState(() => groups = list);
+      _updateBatchLabel();
     });
   }
 
@@ -457,6 +489,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       checkAudioAvailable();
       if (autoSound && hasAudio) playAudio();
     }
+    _updateBatchLabel();
   }
 
   void updateLastCharacter(int id) {
