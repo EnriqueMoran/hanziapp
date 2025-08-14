@@ -4,11 +4,13 @@ import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
 import '../api/settings_api.dart';
+import '../api/api_config.dart';
 import '../ui_scale.dart';
 import '../layout_config.dart';
 import 'dart:async';
 import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
     as mlkit;
+import 'package:http/http.dart' as http;
 
 class CharacterReviewScreen extends StatefulWidget {
   final List<Character>? initialCharacters;
@@ -75,6 +77,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool addingToGroup = false;
   int? selectedGroupId;
 
+  bool _serverConnected = false;
+  Timer? _connectionTimer;
+
   Character? get current =>
       characters.isEmpty ? null : characters[currentIndex];
 
@@ -104,6 +109,19 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     height: 1.0,
   );
 
+  Future<void> _checkConnection() async {
+    try {
+      await http
+          .get(Uri.parse(ApiConfig.baseUrl))
+          .timeout(const Duration(seconds: 5));
+      if (!mounted) return;
+      setState(() => _serverConnected = true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _serverConnected = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -121,6 +139,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     GroupApi.fetchAll().then((list) {
       if (mounted) setState(() => groups = list);
     });
+    _checkConnection();
+    _connectionTimer =
+        Timer.periodic(const Duration(seconds: 30), (_) => _checkConnection());
     if (widget.initialCharacters != null) {
       characters = List.of(widget.initialCharacters!);
       batchLabel = widget.batchValue != null && widget.batchValue!.isNotEmpty
@@ -168,6 +189,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     examplesController.dispose();
     levelController.dispose();
     tagsController.dispose();
+    _connectionTimer?.cancel();
     recognizeDebounce?.cancel();
     super.dispose();
   }
@@ -741,9 +763,25 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       width: UiScale.toggleWidth,
                       child: Align(
                         alignment: Alignment.topLeft,
-                        child: IconButton(
-                          icon: Icon(Icons.settings),
-                          onPressed: _openSettingsMenu,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.settings),
+                              onPressed: _openSettingsMenu,
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: _serverConnected
+                                    ? Colors.lightGreenAccent
+                                    : Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
