@@ -6,10 +6,15 @@ import '../offline/offline_service.dart';
 class Group {
   final int id;
   final String name;
-
   final List<int> characterIds;
+  final int? updatedAt;
 
-  Group({required this.id, required this.name, required this.characterIds});
+  Group({
+    required this.id,
+    required this.name,
+    required this.characterIds,
+    this.updatedAt,
+  });
 
   factory Group.fromJson(Map<String, dynamic> json) {
     final chars = (json['characters'] as String? ?? '')
@@ -21,6 +26,7 @@ class Group {
       id: json['id'] as int,
       name: json['name'] as String,
       characterIds: chars,
+      updatedAt: json['updated_at'] as int? ?? json['updatedAt'] as int?,
     );
   }
 
@@ -28,6 +34,7 @@ class Group {
     'id': id,
     'name': name,
     'characters': characterIds,
+    if (updatedAt != null) 'updated_at': updatedAt,
   };
 }
 
@@ -64,6 +71,7 @@ class GroupApi {
         id: OfflineService.nextTempId(),
         name: name,
         characterIds: characters,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
       );
       await OfflineService.addLocalGroup(g);
       await OfflineService.queueOperation('group_create', {
@@ -93,7 +101,12 @@ class GroupApi {
     List<int> characters,
   ) async {
     if (OfflineService.isSupported && OfflineService.isOffline) {
-      final g = Group(id: id, name: name, characterIds: characters);
+      final g = Group(
+        id: id,
+        name: name,
+        characterIds: characters,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
       await OfflineService.updateLocalGroup(g);
       await OfflineService.queueOperation('group_update', g.toJson());
       return;

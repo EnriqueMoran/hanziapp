@@ -14,13 +14,14 @@ import '../api/group_api.dart';
 import '../api/batch_api.dart' show Batch, BatchApi;
 import '../api/settings_api.dart';
 
-typedef SyncProgress = void Function(
-  String message,
-  int current,
-  int total, {
-  int? currentItem,
-  int? totalItems,
-});
+typedef SyncProgress =
+    void Function(
+      String message,
+      int current,
+      int total, {
+      int? currentItem,
+      int? totalItems,
+    });
 
 class OfflineService {
   static sqflite.Database? _db;
@@ -104,6 +105,7 @@ class OfflineService {
                 .toList(),
             other: e['other'] as String? ?? '',
             examples: e['examples'] as String? ?? '',
+            updatedAt: e['updated_at'] as int?,
           ),
         )
         .toList();
@@ -134,10 +136,15 @@ class OfflineService {
         'tags': c.tags.join(','),
         'other': c.other,
         'examples': c.examples,
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-        }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
-      progress?.call('Characters synced', stage, totalStages,
-          currentItem: i + 1, totalItems: chars.length);
+        'updated_at': c.updatedAt ?? DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+      progress?.call(
+        'Characters synced',
+        stage,
+        totalStages,
+        currentItem: i + 1,
+        totalItems: chars.length,
+      );
     }
     await batch.commit(noResult: true);
   }
@@ -157,6 +164,7 @@ class OfflineService {
                 .where((t) => t.isNotEmpty)
                 .map(int.parse)
                 .toList(),
+            updatedAt: e['updated_at'] as int?,
           ),
         )
         .toList();
@@ -182,10 +190,15 @@ class OfflineService {
         'id': g.id,
         'name': g.name,
         'characters': g.characterIds.join(','),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-        }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
-      progress?.call('Groups synced', stage, totalStages,
-          currentItem: i + 1, totalItems: groups.length);
+        'updated_at': g.updatedAt ?? DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+      progress?.call(
+        'Groups synced',
+        stage,
+        totalStages,
+        currentItem: i + 1,
+        totalItems: groups.length,
+      );
     }
     await batch.commit(noResult: true);
   }
@@ -204,6 +217,7 @@ class OfflineService {
                 .split(',')
                 .where((t) => t.isNotEmpty)
                 .toList(),
+            updatedAt: e['updated_at'] as int?,
           ),
         )
         .toList();
@@ -229,10 +243,15 @@ class OfflineService {
         'id': b.id,
         'name': b.name,
         'characters': b.characters.join(','),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-        }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
-      progress?.call('Batches synced', stage, totalStages,
-          currentItem: i + 1, totalItems: batches.length);
+        'updated_at': b.updatedAt ?? DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+      progress?.call(
+        'Batches synced',
+        stage,
+        totalStages,
+        currentItem: i + 1,
+        totalItems: batches.length,
+      );
     }
     await batch.commit(noResult: true);
   }
@@ -241,8 +260,10 @@ class OfflineService {
     if (!isSupported) return;
     final db = _db;
     if (db == null) return;
-    await db.insert('settings', {'key': key, 'value': value},
-        conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+    await db.insert('settings', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
   }
 
   static Future<String> getSetting(String key) async {
@@ -292,33 +313,44 @@ class OfflineService {
     if (!isSupported) return 0;
     const total = 4;
     final chars = await CharacterApi.fetchAll(forceRemote: true);
-    await _saveCharacters(chars,
-        clearExisting: true,
-        progress: progress,
-        stage: 1,
-        totalStages: total);
+    await _saveCharacters(
+      chars,
+      clearExisting: true,
+      progress: progress,
+      stage: 1,
+      totalStages: total,
+    );
 
     final groups = await GroupApi.fetchAll(forceRemote: true);
-    await _saveGroups(groups,
-        clearExisting: true,
-        progress: progress,
-        stage: 2,
-        totalStages: total);
+    await _saveGroups(
+      groups,
+      clearExisting: true,
+      progress: progress,
+      stage: 2,
+      totalStages: total,
+    );
 
     final batches = await BatchApi.fetchAll(forceRemote: true);
-    await _saveBatches(batches,
-        clearExisting: true,
-        progress: progress,
-        stage: 3,
-        totalStages: total);
+    await _saveBatches(
+      batches,
+      clearExisting: true,
+      progress: progress,
+      stage: 3,
+      totalStages: total,
+    );
 
     const presetKey = 'layout_presets';
     const selectedKey = 'selected_layout_preset';
     final presetStr = await SettingsApi.getString(presetKey);
     final List list = presetStr.isEmpty ? [] : json.decode(presetStr);
     for (int i = 0; i < list.length; i++) {
-      progress?.call('Layouts synced', 4, total,
-          currentItem: i + 1, totalItems: list.length);
+      progress?.call(
+        'Layouts synced',
+        4,
+        total,
+        currentItem: i + 1,
+        totalItems: list.length,
+      );
     }
     await setSetting(presetKey, presetStr);
     final sel = await SettingsApi.getString(selectedKey);
@@ -350,8 +382,13 @@ class OfflineService {
     if (db != null) {
       final ops = await db.query('pending_ops', orderBy: 'updated_at');
       for (int i = 0; i < ops.length; i++) {
-        progress?.call('Uploading pending operations', 0, 5,
-            currentItem: i + 1, totalItems: ops.length);
+        progress?.call(
+          'Uploading pending operations',
+          0,
+          4,
+          currentItem: i + 1,
+          totalItems: ops.length,
+        );
         final op = ops[i];
         final payload = json.decode(op['payload'] as String);
         final type = op['op_type'] as String;
@@ -401,11 +438,184 @@ class OfflineService {
       }
       await db.delete('pending_ops');
     }
-    return await downloadAll(progress: (msg, current, total,
-        {int? currentItem, int? totalItems}) {
-      progress?.call(msg, current + 1, total + 1,
-          currentItem: currentItem, totalItems: totalItems);
-    });
+
+    const totalStages = 4;
+
+    // Characters
+    progress?.call('Downloading characters', 1, totalStages);
+    final remoteChars = await CharacterApi.fetchAll(forceRemote: true);
+    final localChars = await getAllCharacters();
+    final charMap = {for (final c in remoteChars) c.id: c};
+    for (int i = 0; i < localChars.length; i++) {
+      final lc = localChars[i];
+      if (lc.id <= 0) {
+        progress?.call(
+          'Reconciling characters',
+          1,
+          totalStages,
+          currentItem: i + 1,
+          totalItems: localChars.length,
+        );
+        continue;
+      }
+      final rc = charMap[lc.id];
+      if (rc == null) {
+        final newId = await CharacterApi.createCharacter(lc);
+        if (newId != null) {
+          charMap[newId] = Character(
+            id: newId,
+            character: lc.character,
+            pinyin: lc.pinyin,
+            meaning: lc.meaning,
+            level: lc.level,
+            tags: lc.tags,
+            other: lc.other,
+            examples: lc.examples,
+            updatedAt: lc.updatedAt,
+          );
+        }
+      } else if (_isLocalNewer(lc.updatedAt, rc.updatedAt)) {
+        await CharacterApi.updateCharacter(lc);
+        charMap[lc.id] = lc;
+      }
+      progress?.call(
+        'Reconciling characters',
+        1,
+        totalStages,
+        currentItem: i + 1,
+        totalItems: localChars.length,
+      );
+    }
+    final reconciledChars = charMap.values.toList();
+    await _saveCharacters(
+      reconciledChars,
+      clearExisting: true,
+      progress: (msg, _, __, {int? currentItem, int? totalItems}) {
+        progress?.call(
+          msg,
+          1,
+          totalStages,
+          currentItem: currentItem,
+          totalItems: totalItems,
+        );
+      },
+    );
+
+    // Groups
+    progress?.call('Downloading groups', 2, totalStages);
+    final remoteGroups = await GroupApi.fetchAll(forceRemote: true);
+    final localGroups = await getAllGroups();
+    final groupMap = {for (final g in remoteGroups) g.id: g};
+    for (int i = 0; i < localGroups.length; i++) {
+      final lg = localGroups[i];
+      if (lg.id <= 0) {
+        progress?.call(
+          'Reconciling groups',
+          2,
+          totalStages,
+          currentItem: i + 1,
+          totalItems: localGroups.length,
+        );
+        continue;
+      }
+      final rg = groupMap[lg.id];
+      if (rg == null) {
+        final newId = await GroupApi.createGroup(lg.name, lg.characterIds);
+        if (newId != null) {
+          groupMap[newId] = Group(
+            id: newId,
+            name: lg.name,
+            characterIds: lg.characterIds,
+            updatedAt: lg.updatedAt,
+          );
+        }
+      } else if (_isLocalNewer(lg.updatedAt, rg.updatedAt)) {
+        await GroupApi.updateGroup(lg.id, lg.name, lg.characterIds);
+        groupMap[lg.id] = lg;
+      }
+      progress?.call(
+        'Reconciling groups',
+        2,
+        totalStages,
+        currentItem: i + 1,
+        totalItems: localGroups.length,
+      );
+    }
+    final reconciledGroups = groupMap.values.toList();
+    await _saveGroups(
+      reconciledGroups,
+      clearExisting: true,
+      progress: (msg, _, __, {int? currentItem, int? totalItems}) {
+        progress?.call(
+          msg,
+          2,
+          totalStages,
+          currentItem: currentItem,
+          totalItems: totalItems,
+        );
+      },
+    );
+
+    // Batches
+    progress?.call('Downloading batches', 3, totalStages);
+    final remoteBatches = await BatchApi.fetchAll(forceRemote: true);
+    final localBatches = await getAllBatches();
+    final batchMap = {for (final b in remoteBatches) b.id: b};
+    for (int i = 0; i < localBatches.length; i++) {
+      final lb = localBatches[i];
+      if (lb.id <= 0) {
+        progress?.call(
+          'Reconciling batches',
+          3,
+          totalStages,
+          currentItem: i + 1,
+          totalItems: localBatches.length,
+        );
+        continue;
+      }
+      final rb = batchMap[lb.id];
+      if (rb == null) {
+        // No API to create single batch; reuse saveBatches
+        await BatchApi.saveBatches([lb]);
+        batchMap[lb.id] = lb;
+      } else if (_isLocalNewer(lb.updatedAt, rb.updatedAt)) {
+        await BatchApi.saveBatches([lb]);
+        batchMap[lb.id] = lb;
+      }
+      progress?.call(
+        'Reconciling batches',
+        3,
+        totalStages,
+        currentItem: i + 1,
+        totalItems: localBatches.length,
+      );
+    }
+    final reconciledBatches = batchMap.values.toList();
+    await _saveBatches(
+      reconciledBatches,
+      clearExisting: true,
+      progress: (msg, _, __, {int? currentItem, int? totalItems}) {
+        progress?.call(
+          msg,
+          3,
+          totalStages,
+          currentItem: currentItem,
+          totalItems: totalItems,
+        );
+      },
+    );
+
+    // Layout presets
+    progress?.call('Downloading layouts', 4, totalStages);
+    const presetKey = 'layout_presets';
+    const selectedKey = 'selected_layout_preset';
+    final presetStr = await SettingsApi.getString(presetKey);
+    await setSetting(presetKey, presetStr);
+    final sel = await SettingsApi.getString(selectedKey);
+    await setSetting(selectedKey, sel);
+
+    final size = await File(_dbPath).length();
+    return size;
   }
 
   static Future<void> queueOperation(
@@ -420,5 +630,11 @@ class OfflineService {
       'payload': json.encode(payload),
       'updated_at': DateTime.now().millisecondsSinceEpoch,
     });
+  }
+
+  static bool _isLocalNewer(int? local, int? remote) {
+    if (remote == null) return true;
+    if (local == null) return true;
+    return local > remote;
   }
 }

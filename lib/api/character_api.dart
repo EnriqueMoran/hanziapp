@@ -12,6 +12,7 @@ class Character {
   final List<String> tags;
   final String other;
   final String examples;
+  final int? updatedAt;
 
   Character({
     required this.id,
@@ -22,6 +23,7 @@ class Character {
     required this.tags,
     required this.other,
     required this.examples,
+    this.updatedAt,
   });
 
   factory Character.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,7 @@ class Character {
           .toList(),
       other: json['other'] as String? ?? '',
       examples: json['examples'] as String? ?? '',
+      updatedAt: json['updated_at'] as int? ?? json['updatedAt'] as int?,
     );
   }
 
@@ -50,6 +53,7 @@ class Character {
       'tags': tags.join(','),
       'other': other,
       'examples': examples,
+      if (updatedAt != null) 'updated_at': updatedAt,
     };
   }
 }
@@ -103,8 +107,19 @@ class CharacterApi {
 
   static Future<void> updateCharacter(Character c) async {
     if (OfflineService.isSupported && OfflineService.isOffline) {
-      await OfflineService.updateLocalCharacter(c);
-      await OfflineService.queueOperation('character_update', c.toJson());
+      final updated = Character(
+        id: c.id,
+        character: c.character,
+        pinyin: c.pinyin,
+        meaning: c.meaning,
+        level: c.level,
+        tags: c.tags,
+        other: c.other,
+        examples: c.examples,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      await OfflineService.updateLocalCharacter(updated);
+      await OfflineService.queueOperation('character_update', updated.toJson());
       return;
     }
     await http.put(
@@ -140,6 +155,7 @@ class CharacterApi {
         tags: c.tags,
         other: c.other,
         examples: c.examples,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
       );
       await OfflineService.addLocalCharacter(temp);
       final payload = temp.toJson();

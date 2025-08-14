@@ -7,8 +7,14 @@ class Batch {
   final int id;
   final String name;
   final List<String> characters;
+  final int? updatedAt;
 
-  Batch({required this.id, required this.name, required this.characters});
+  Batch({
+    required this.id,
+    required this.name,
+    required this.characters,
+    this.updatedAt,
+  });
 
   factory Batch.fromJson(Map<String, dynamic> json) {
     return Batch(
@@ -18,6 +24,7 @@ class Batch {
           .split(',')
           .where((e) => e.isNotEmpty)
           .toList(),
+      updatedAt: json['updated_at'] as int? ?? json['updatedAt'] as int?,
     );
   }
 
@@ -25,6 +32,7 @@ class Batch {
     'id': id,
     'name': name,
     'characters': characters.join(','),
+    if (updatedAt != null) 'updated_at': updatedAt,
   };
 }
 
@@ -57,9 +65,19 @@ class BatchApi {
 
   static Future<void> saveBatches(List<Batch> batches) async {
     if (OfflineService.isSupported && OfflineService.isOffline) {
-      await OfflineService.saveLocalBatches(batches);
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final updated = [
+        for (final b in batches)
+          Batch(
+            id: b.id,
+            name: b.name,
+            characters: b.characters,
+            updatedAt: ts,
+          ),
+      ];
+      await OfflineService.saveLocalBatches(updated);
       await OfflineService.queueOperation('batches_save', {
-        'batches': batches.map((e) => e.toJson()).toList(),
+        'batches': updated.map((e) => e.toJson()).toList(),
       });
       return;
     }
