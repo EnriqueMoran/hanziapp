@@ -117,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   Future<void> _search() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
+    await _checkConnection();
     final all = await CharacterApi.fetchAll();
     final lower = query.toLowerCase();
     final results = all
@@ -179,6 +180,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         const SizedBox(width: 8),
         ElevatedButton(
           onPressed: () async {
+            await _checkConnection();
             final preset = _findPresetByName(_presets, _selectedPreset);
             final changed = await Navigator.push<bool>(
               context,
@@ -203,6 +205,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: ElevatedButton(
         onPressed: () async {
+          await _checkConnection();
           await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => target),
@@ -230,6 +233,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           Expanded(
             child: ElevatedButton(
               onPressed: () async {
+                await _checkConnection();
                 await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => target1),
@@ -243,6 +247,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           Expanded(
             child: ElevatedButton(
               onPressed: () async {
+                await _checkConnection();
                 await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => target2),
@@ -269,8 +274,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     OfflineService.isOffline = !hasConn;
     if (hasConn) {
       final dbSize = await OfflineService.syncWithServer(
-        progress: (msg, current, total,
-            {int? currentItem, int? totalItems}) {
+        progress: (msg, current, total, {int? currentItem, int? totalItems}) {
           if (!mounted) return;
           setState(() {
             var text = '$msg ($current/$total)';
@@ -311,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     try {
       final resp = await http
           .get(Uri.parse('${ApiConfig.baseUrl}/ping'))
-          .timeout(const Duration(seconds: 2));
+          .timeout(const Duration(seconds: 1));
       hasConn = resp.statusCode < 500;
     } catch (_) {
       hasConn = false;

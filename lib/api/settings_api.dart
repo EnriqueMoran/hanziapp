@@ -1,11 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'api_config.dart';
+import '../offline/offline_service.dart';
 
 class SettingsApi {
   static const String baseUrl = ApiConfig.baseUrl;
 
   static Future<String> _getValue(String key) async {
+    if (OfflineService.isSupported && OfflineService.isOffline) {
+      return await OfflineService.getSetting(key);
+    }
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/settings/$key'),
@@ -13,15 +17,28 @@ class SettingsApi {
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['value'] as String? ?? '';
+        final val = data['value'] as String? ?? '';
+        if (OfflineService.isSupported) {
+          await OfflineService.setSetting(key, val);
+        }
+        return val;
       }
     } catch (_) {
-      // Ignore network errors; the caller will treat missing values as defaults.
+      if (OfflineService.isSupported) {
+        OfflineService.isOffline = true;
+        return await OfflineService.getSetting(key);
+      }
     }
     return '';
   }
 
   static Future<void> _setValue(String key, String value) async {
+    if (OfflineService.isSupported) {
+      await OfflineService.setSetting(key, value);
+    }
+    if (OfflineService.isSupported && OfflineService.isOffline) {
+      return;
+    }
     try {
       await http.put(
         Uri.parse('$baseUrl/settings/$key'),
@@ -32,7 +49,9 @@ class SettingsApi {
         body: json.encode({'value': value}),
       );
     } catch (_) {
-      // Swallow errors when the server is unreachable.
+      if (OfflineService.isSupported) {
+        OfflineService.isOffline = true;
+      }
     }
   }
 

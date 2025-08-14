@@ -178,13 +178,35 @@ class CharacterApi {
   }
 
   static Future<List<String>> fetchTags() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/tags'),
-      headers: {'X-API-Token': ApiConfig.apiToken},
-    );
-    if (response.statusCode == 200) {
-      final List list = json.decode(response.body);
-      return list.cast<String>();
+    if (OfflineService.isSupported && OfflineService.isOffline) {
+      final chars = await OfflineService.getAllCharacters();
+      final set = <String>{};
+      for (final c in chars) {
+        set.addAll(c.tags);
+      }
+      final list = set.toList()..sort();
+      return list;
+    }
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/tags'),
+        headers: {'X-API-Token': ApiConfig.apiToken},
+      );
+      if (response.statusCode == 200) {
+        final List list = json.decode(response.body);
+        return list.cast<String>();
+      }
+    } catch (_) {
+      if (OfflineService.isSupported) {
+        OfflineService.isOffline = true;
+        final chars = await OfflineService.getAllCharacters();
+        final set = <String>{};
+        for (final c in chars) {
+          set.addAll(c.tags);
+        }
+        final list = set.toList()..sort();
+        return list;
+      }
     }
     return [];
   }
