@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
@@ -38,6 +39,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool showHanzi = true;
   bool showPinyin = true;
   bool showTranslation = true;
+  bool showTouchPanel = !kIsWeb;
   bool editing = false;
 
   late final TextEditingController hanziController;
@@ -551,6 +553,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final controls = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildToggle('Touch Panel', showTouchPanel, (v) {
+          setState(() => showTouchPanel = v);
+        }),
+        SizedBox(height: 8),
         _buildToggle('Auto Sound', autoSound, (v) {
           setState(() => autoSound = v);
           if (v && hasAudio) playAudio();
@@ -567,12 +573,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
     final exampleArea = SizedBox(
       height: exampleHeight,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: 2),
+      child: DeviceConfig.deviceType == DeviceType.smartphone
+          ? Container(
               padding: EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
@@ -580,48 +582,103 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: editing
-                  ? TextField(
-                      controller: detailsController,
-                      maxLines: null,
-                      expands: true,
-                      decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: detailFontSize),
+                  ? Column(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: detailsController,
+                            maxLines: null,
+                            expands: true,
+                            decoration: InputDecoration(border: InputBorder.none),
+                            style: TextStyle(fontSize: detailFontSize),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: examplesController,
+                            maxLines: null,
+                            expands: true,
+                            decoration: InputDecoration(border: InputBorder.none),
+                            style: TextStyle(fontSize: detailFontSize),
+                          ),
+                        ),
+                      ],
                     )
                   : SingleChildScrollView(
-                      child: SelectableText(
-                        current?.other ?? '',
-                        style: TextStyle(fontSize: detailFontSize),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SelectableText(
+                            current?.other ?? '',
+                            style: TextStyle(fontSize: detailFontSize),
+                          ),
+                          SizedBox(height: 8),
+                          SelectableText(
+                            current?.examples ?? '',
+                            style: TextStyle(fontSize: detailFontSize),
+                          ),
+                        ],
                       ),
                     ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.only(left: 2),
-              padding: EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
-                border: Border.all(color: Color.fromARGB(255, 36, 99, 121)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: editing
-                  ? TextField(
-                      controller: examplesController,
-                      maxLines: null,
-                      expands: true,
-                      decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: detailFontSize),
-                    )
-                  : SingleChildScrollView(
-                      child: SelectableText(
-                        current?.examples ?? '',
-                        style: TextStyle(fontSize: detailFontSize),
-                      ),
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(right: 2),
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
+                      border: Border.all(color: Color.fromARGB(255, 36, 99, 121)),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: editing
+                        ? TextField(
+                            controller: detailsController,
+                            maxLines: null,
+                            expands: true,
+                            decoration:
+                                InputDecoration(border: InputBorder.none),
+                            style: TextStyle(fontSize: detailFontSize),
+                          )
+                        : SingleChildScrollView(
+                            child: SelectableText(
+                              current?.other ?? '',
+                              style: TextStyle(fontSize: detailFontSize),
+                            ),
+                          ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(left: 2),
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
+                      border: Border.all(color: Color.fromARGB(255, 36, 99, 121)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: editing
+                        ? TextField(
+                            controller: examplesController,
+                            maxLines: null,
+                            expands: true,
+                            decoration:
+                                InputDecoration(border: InputBorder.none),
+                            style: TextStyle(fontSize: detailFontSize),
+                          )
+                        : SingleChildScrollView(
+                            child: SelectableText(
+                              current?.examples ?? '',
+                              style: TextStyle(fontSize: detailFontSize),
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
 
     return Scaffold(
@@ -699,7 +756,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       ],
                     ),
                   ),
-                if (layout.showTouchPanel) SizedBox(height: drawingHeight + 56),
+                if (showTouchPanel) SizedBox(height: drawingHeight + 56),
               ],
             ),
           ),
@@ -710,7 +767,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (layout.showTouchPanel)
+                  if (showTouchPanel)
                     SizedBox(
                       height: drawingHeight,
                       width: contentWidth,
@@ -789,11 +846,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       alignment: Alignment.centerLeft,
                       child: _infoColumn(),
                     ),
-                  SizedBox(height: layout.showTouchPanel ? 16 : 8),
+                  SizedBox(height: showTouchPanel ? 16 : 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (layout.showTouchPanel)
+                      if (showTouchPanel)
                         ElevatedButton(
                           onPressed: clearDrawing,
                           style: ElevatedButton.styleFrom(
@@ -801,7 +858,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                           ),
                           child: Text('DELETE'),
                         ),
-                      if (layout.showTouchPanel) SizedBox(width: 8),
+                      if (showTouchPanel) SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: goToPreviousCharacter,
                         child: Text('PREVIOUS'),
@@ -833,6 +890,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width > 900) {
+      DeviceConfig.deviceType = DeviceType.browser;
+    } else if (width > 600) {
+      DeviceConfig.deviceType = DeviceType.tablet;
+    } else {
+      DeviceConfig.deviceType = DeviceType.smartphone;
+    }
     switch (DeviceConfig.deviceType) {
       case DeviceType.tablet:
         return _buildTabletLayout(context);
@@ -908,7 +973,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     return Row(
       children: [
         Text(label),
-        Switch(value: value, onChanged: onChanged),
+        Transform.scale(
+          scale: 0.8,
+          child: Switch(value: value, onChanged: onChanged),
+        ),
       ],
     );
   }

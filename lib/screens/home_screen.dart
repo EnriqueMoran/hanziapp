@@ -21,29 +21,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  Widget _deviceSelector() {
-    return Row(
-      children: [
-        const Text('Device:'),
-        const SizedBox(width: 8),
-        DropdownButton<DeviceType>(
-          value: DeviceConfig.deviceType,
-          items: const [
-            DropdownMenuItem(
-                value: DeviceType.browser, child: Text('Browser')),
-            DropdownMenuItem(
-                value: DeviceType.tablet, child: Text('Tablet')),
-            DropdownMenuItem(
-                value: DeviceType.smartphone, child: Text('Smartphone')),
-          ],
-          onChanged: (v) {
-            if (v != null) setState(() => DeviceConfig.deviceType = v);
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _searchBox() {
     return Row(
       children: [
@@ -155,14 +132,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width > 900) {
+      DeviceConfig.deviceType = DeviceType.browser;
+    } else if (width > 600) {
+      DeviceConfig.deviceType = DeviceType.tablet;
+    } else {
+      DeviceConfig.deviceType = DeviceType.smartphone;
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Hanzi App')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _deviceSelector(),
-            const SizedBox(height: 16),
             _searchBox(),
             const SizedBox(height: 16),
             _fullWidthButton(context, 'Review full vocabulary',
