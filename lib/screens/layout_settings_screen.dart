@@ -14,6 +14,7 @@ class LayoutSettingsScreen extends StatefulWidget {
 
 class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
   late TextEditingController _nameController;
+  late TextEditingController _fontController;
   late double _exampleHeight;
   late double _drawingHeight;
   late double _panelWidth;
@@ -29,6 +30,8 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _drawingHeight = p.drawingHeightRatio;
       _panelWidth = p.panelWidthRatio;
       _fontScale = p.fontScale;
+      _fontController =
+          TextEditingController(text: _fontScale.toStringAsFixed(2));
     } else {
       final layout = DeviceConfig.layout;
       _nameController = TextEditingController();
@@ -36,7 +39,28 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       _drawingHeight = layout.drawingHeightRatio;
       _panelWidth = layout.panelWidthRatio;
       _fontScale = layout.fontScale;
+      _fontController =
+          TextEditingController(text: _fontScale.toStringAsFixed(2));
     }
+  }
+
+  void _newLayout() {
+    final layout = DeviceConfig.layout;
+    setState(() {
+      _nameController.clear();
+      _exampleHeight = layout.exampleHeightRatio;
+      _drawingHeight = layout.drawingHeightRatio;
+      _panelWidth = layout.panelWidthRatio;
+      _fontScale = layout.fontScale;
+      _fontController.text = _fontScale.toStringAsFixed(2);
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _fontController.dispose();
+    super.dispose();
   }
 
   Future<void> _save() async {
@@ -96,9 +120,44 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
           padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
+              SizedBox(
+                height: 300,
+                child: _LayoutPreview(
+                  exampleHeightRatio: _exampleHeight,
+                  drawingHeightRatio: _drawingHeight,
+                  panelWidthRatio: _panelWidth,
+                  fontScale: _fontScale,
+                ),
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _fontController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration:
+                          const InputDecoration(labelText: 'Font size'),
+                      onChanged: (v) {
+                        final value = double.tryParse(v);
+                        if (value != null) {
+                          setState(() => _fontScale = value);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _newLayout,
+                    child: const Text('New Layout'),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               const Text('Examples height'),
@@ -122,27 +181,103 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                 max: 0.7,
                 onChanged: (v) => setState(() => _panelWidth = v),
               ),
-              const Text('Info font scale'),
-              Slider(
-                value: _fontScale,
-                min: 0.5,
-                max: 1.5,
-                onChanged: (v) => setState(() => _fontScale = v),
-              ),
               const SizedBox(height: 24),
-              ElevatedButton(onPressed: _save, child: const Text('Save')),
-              if (widget.preset != null) ...[
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: _delete,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text('Delete'),
-                ),
-              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: widget.preset != null ? _delete : null,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red),
+                      child: const Text('Delete'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _save,
+                      child: const Text('Save'),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LayoutPreview extends StatelessWidget {
+  final double exampleHeightRatio;
+  final double drawingHeightRatio;
+  final double panelWidthRatio;
+  final double fontScale;
+
+  const _LayoutPreview({
+    required this.exampleHeightRatio,
+    required this.drawingHeightRatio,
+    required this.panelWidthRatio,
+    required this.fontScale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
+        final exampleHeight = h * exampleHeightRatio;
+        final drawingHeight = h * drawingHeightRatio;
+        final infoHeight = h - exampleHeight - drawingHeight;
+        final infoWidth = w * panelWidthRatio;
+        final drawWidth = w - infoWidth;
+        final textStyle = TextStyle(fontSize: 16 * fontScale);
+
+        return Column(
+          children: [
+            Container(
+              height: exampleHeight,
+              color: Colors.grey[300],
+              alignment: Alignment.center,
+              child: Text('Example', style: textStyle),
+            ),
+            SizedBox(
+              height: infoHeight,
+              child: Row(
+                children: [
+                  Container(
+                    width: infoWidth,
+                    padding: const EdgeInsets.all(4),
+                    color: Colors.grey[200],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Level: 1', style: textStyle),
+                        Text('Tags: demo', style: textStyle),
+                        Text('Group/Batch', style: textStyle),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: drawWidth,
+                    color: Colors.grey[400],
+                    alignment: Alignment.center,
+                    child: const Text('Touch'),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              height: drawingHeight,
+              color: Colors.grey[300],
+              alignment: Alignment.center,
+              child: const Text('Examples'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
