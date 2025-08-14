@@ -473,6 +473,51 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     });
   }
 
+  Future<void> createGroupAndAdd() async {
+    final c = current;
+    if (c == null) return;
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('New Group'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(labelText: 'Group name'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(context, controller.text.trim()),
+              child: const Text('CREATE'),
+            ),
+          ],
+        );
+      },
+    );
+    if (name == null || name.isEmpty) return;
+    final id = await GroupApi.createGroup(name, [c.id]);
+    if (!mounted) return;
+    if (id != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Group "$name" created')));
+    }
+    GroupApi.fetchAll().then((list) {
+      if (!mounted) return;
+      setState(() {
+        groups = list;
+        addingToGroup = false;
+        selectedGroupId = null;
+      });
+      _updateBatchLabel();
+    });
+  }
+
   Future<void> loadInitialIndex() async {
     int start = 0;
     final id = await SettingsApi.getInt(_storageKey);
@@ -876,6 +921,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                             onPressed:
                                 selectedGroupId != null ? applyAddToGroup : null,
                             child: Text('APPLY'),
+                          ),
+                        if (addingToGroup)
+                          ElevatedButton(
+                            onPressed: createGroupAndAdd,
+                            child: Text('CREATE GROUP'),
                           ),
                       ],
                     ),
