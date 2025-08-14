@@ -18,6 +18,13 @@ class CharacterReviewScreen extends StatefulWidget {
   final String? level;
   final String? tag;
   final bool recordHistory;
+  final bool layoutMode;
+  final VoidCallback? onSaveLayout;
+  final VoidCallback? onDeleteLayout;
+  final VoidCallback? onLoadLayout;
+  final double? fontScaleValue;
+  final ValueChanged<double>? onFontScaleChanged;
+  final VoidCallback? onSettingsPressed;
 
   const CharacterReviewScreen({
     Key? key,
@@ -28,6 +35,13 @@ class CharacterReviewScreen extends StatefulWidget {
     this.level,
     this.tag,
     this.recordHistory = true,
+    this.layoutMode = false,
+    this.onSaveLayout,
+    this.onDeleteLayout,
+    this.onLoadLayout,
+    this.fontScaleValue,
+    this.onFontScaleChanged,
+    this.onSettingsPressed,
   }) : super(key: key);
 
   @override
@@ -742,7 +756,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                         alignment: Alignment.topLeft,
                         child: IconButton(
                           icon: Icon(Icons.settings),
-                          onPressed: _openSettingsMenu,
+                          onPressed:
+                              widget.onSettingsPressed ?? _openSettingsMenu,
                         ),
                       ),
                     ),
@@ -753,7 +768,35 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 SizedBox(height: 24),
                 exampleArea,
                 SizedBox(height: 16),
-                if (DeviceConfig.deviceType != DeviceType.smartphone)
+                if (widget.layoutMode)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: widget.onLoadLayout,
+                          child: Text('LOAD LAYOUT'),
+                        ),
+                        DropdownButton<double>(
+                          value: widget.fontScaleValue,
+                          items: const [
+                            DropdownMenuItem(
+                                value: 0.8, child: Text('Small')),
+                            DropdownMenuItem(
+                                value: 1.0, child: Text('Normal')),
+                            DropdownMenuItem(
+                                value: 1.2, child: Text('Large')),
+                            DropdownMenuItem(
+                                value: 1.5, child: Text('XL')),
+                          ],
+                          onChanged: widget.onFontScaleChanged,
+                        ),
+                      ],
+                    ),
+                  )
+                else if (DeviceConfig.deviceType != DeviceType.smartphone)
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Wrap(
@@ -838,27 +881,51 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                     SizedBox(height: showTouchPanel ? 16 : 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (showTouchPanel)
-                          ElevatedButton(
-                            onPressed: clearDrawing,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                            ),
-                            child: Text('DELETE'),
-                          ),
-                        if (showTouchPanel) SizedBox(width: 8),
-                        ElevatedButton(
-                        onPressed: goToPreviousCharacter,
-                        child: Text('PREVIOUS'),
-                      ),
-                      SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: goToNextCharacter,
-                        child: Text('NEXT'),
-                      ),
-                    ],
-                  ),
+                      children: widget.layoutMode
+                          ? [
+                              if (showTouchPanel)
+                                ElevatedButton(
+                                  onPressed: clearDrawing,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                  ),
+                                  child: Text('DELETE'),
+                                ),
+                              if (showTouchPanel) SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: widget.onSaveLayout,
+                                child: Text('SAVE'),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: widget.onDeleteLayout,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: Text('DELETE'),
+                              ),
+                            ]
+                          : [
+                              if (showTouchPanel)
+                                ElevatedButton(
+                                  onPressed: clearDrawing,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                  ),
+                                  child: Text('DELETE'),
+                                ),
+                              if (showTouchPanel) SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: goToPreviousCharacter,
+                                child: Text('PREVIOUS'),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: goToNextCharacter,
+                                child: Text('NEXT'),
+                              ),
+                            ],
+                    ),
                 ],
               ),
             ),
