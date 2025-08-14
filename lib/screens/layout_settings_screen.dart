@@ -26,10 +26,15 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
   late bool _showTouchPanel;
   late bool _autoSound;
 
+  // Keeps track of the layout preset being edited. When null, a new preset
+  // is being created and existing presets should be preserved on save.
+  LayoutPreset? _editingPreset;
+
   @override
   void initState() {
     super.initState();
     final p = widget.preset;
+    _editingPreset = p;
     if (p != null) {
       _nameController = TextEditingController(text: p.name);
       _exampleHeight = p.exampleHeightRatio;
@@ -65,6 +70,7 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
   void _newLayout() {
     final layout = LayoutConfig.forType(DeviceConfig.deviceType);
     setState(() {
+      _editingPreset = null;
       _nameController.clear();
       _exampleHeight = layout.exampleHeightRatio;
       _drawingHeight = layout.drawingHeightRatio;
@@ -104,7 +110,9 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
       autoSound: _autoSound,
     );
     final list = await LayoutPresetApi.loadPresets();
-    list.removeWhere((p) => p.name == widget.preset?.name);
+    if (_editingPreset != null) {
+      list.removeWhere((p) => p.name == _editingPreset!.name);
+    }
     list.removeWhere((p) => p.name == name);
     list.add(preset);
     await LayoutPresetApi.savePresets(list);
@@ -134,7 +142,7 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
     );
     if (confirm != true) return;
     final list = await LayoutPresetApi.loadPresets();
-    list.removeWhere((p) => p.name == widget.preset?.name);
+    list.removeWhere((p) => p.name == _editingPreset?.name);
     await LayoutPresetApi.savePresets(list);
     await LayoutPresetApi.setSelected(null);
     DeviceConfig.customLayout =
@@ -248,7 +256,7 @@ class _LayoutSettingsScreenState extends State<LayoutSettingsScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: widget.preset != null ? _delete : null,
+                      onPressed: _editingPreset != null ? _delete : null,
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red),
                       child: const Text('Delete'),
