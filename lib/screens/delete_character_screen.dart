@@ -104,13 +104,15 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
   Widget _buildBrowserLayout(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Delete Characters')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Wrap(
+      body: SafeArea(
+        bottom: true,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [for (final c in _characters) _buildTile(c)],
@@ -135,7 +137,8 @@ class _DeleteCharacterScreenState extends State<DeleteCharacterScreen> {
                 ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

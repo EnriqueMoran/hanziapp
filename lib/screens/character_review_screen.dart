@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../api/character_api.dart';
 import '../api/group_api.dart';
@@ -17,6 +18,13 @@ class CharacterReviewScreen extends StatefulWidget {
   final String? level;
   final String? tag;
   final bool recordHistory;
+  final bool layoutMode;
+  final VoidCallback? onSaveLayout;
+  final VoidCallback? onDeleteLayout;
+  final VoidCallback? onLoadLayout;
+  final double? fontScaleValue;
+  final ValueChanged<double>? onFontScaleChanged;
+  final VoidCallback? onSettingsPressed;
 
   const CharacterReviewScreen({
     Key? key,
@@ -27,6 +35,13 @@ class CharacterReviewScreen extends StatefulWidget {
     this.level,
     this.tag,
     this.recordHistory = true,
+    this.layoutMode = false,
+    this.onSaveLayout,
+    this.onDeleteLayout,
+    this.onLoadLayout,
+    this.fontScaleValue,
+    this.onFontScaleChanged,
+    this.onSettingsPressed,
   }) : super(key: key);
 
   @override
@@ -38,6 +53,8 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
   bool showHanzi = true;
   bool showPinyin = true;
   bool showTranslation = true;
+  bool showTouchPanel = !kIsWeb;
+  bool showInfoText = DeviceConfig.deviceType != DeviceType.smartphone;
   bool editing = false;
 
   late final TextEditingController hanziController;
@@ -454,6 +471,81 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     if (autoSound && hasAudio) playAudio();
   }
 
+  void _openSettingsMenu() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text('Settings'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildToggle('Show Hanzi', showHanzi, (v) {
+                      setState(() => showHanzi = v);
+                      setStateDialog(() {});
+                    }),
+                    _buildToggle('Show Pinyin', showPinyin, (v) {
+                      setState(() => showPinyin = v);
+                      setStateDialog(() {});
+                    }),
+                    _buildToggle('Show Translation', showTranslation, (v) {
+                      setState(() => showTranslation = v);
+                      setStateDialog(() {});
+                    }),
+                    _buildToggle('Show Info Text', showInfoText, (v) {
+                      setState(() => showInfoText = v);
+                      setStateDialog(() {});
+                    }),
+                    _buildToggle('Touch Panel', showTouchPanel, (v) {
+                      setState(() => showTouchPanel = v);
+                      setStateDialog(() {});
+                    }),
+                    _buildToggle('Auto Sound', autoSound, (v) {
+                      setState(() => autoSound = v);
+                      setStateDialog(() {});
+                      if (v && hasAudio) playAudio();
+                    }),
+                    SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Restart?'),
+                            content: Text('Are you sure you want to restart?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: Text('Restart'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          Navigator.pop(context);
+                          restartReview();
+                        }
+                      },
+                      child: Text('RESTART'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
 
   Widget _buildLayout(BuildContext context, LayoutConfig layout) {
     final screenW = MediaQuery.of(context).size.width;
@@ -461,37 +553,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     final exampleHeight = screenH * layout.exampleHeightRatio;
     final drawingHeight = screenH * layout.drawingHeightRatio;
     final contentWidth = screenW - 48;
-    final panelWidth = contentWidth * layout.panelWidthRatio;
     final double detailFontSize =
         DeviceConfig.deviceType == DeviceType.tablet
             ? UiScale.detailFont * 1.5
             : UiScale.detailFont;
-
-    // Show the visibility toggles on all devices, including smartphones
-    const showAllToggles = true;
-    final toggles = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showAllToggles)
-          _buildToggle(
-            'Show Hanzi',
-            showHanzi,
-            (v) => setState(() => showHanzi = v),
-          ),
-        if (showAllToggles)
-          _buildToggle(
-            'Show Pinyin',
-            showPinyin,
-            (v) => setState(() => showPinyin = v),
-          ),
-        if (showAllToggles)
-          _buildToggle(
-            'Show Translation',
-            showTranslation,
-            (v) => setState(() => showTranslation = v),
-          ),
-      ],
-    );
 
     final previewBox = Column(
       mainAxisSize: MainAxisSize.min,
@@ -548,16 +613,9 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
       ],
     );
 
-    final controls = Column(
+    final listenButton = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildToggle('Auto Sound', autoSound, (v) {
-          setState(() => autoSound = v);
-          if (v && hasAudio) playAudio();
-        }),
-        SizedBox(height: 8),
-        ElevatedButton(onPressed: restartReview, child: Text('RESTART')),
-        SizedBox(height: 8),
         ElevatedButton(
           onPressed: hasAudio ? playAudio : null,
           child: Text('LISTEN'),
@@ -566,13 +624,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     );
 
     final exampleArea = SizedBox(
+      width: contentWidth,
       height: exampleHeight,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: 2),
+      child: DeviceConfig.deviceType == DeviceType.smartphone
+          ? Container(
               padding: EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
@@ -580,49 +635,109 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: editing
-                  ? TextField(
-                      controller: detailsController,
-                      maxLines: null,
-                      expands: true,
-                      decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: detailFontSize),
+                  ? Column(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: detailsController,
+                            maxLines: null,
+                            expands: true,
+                            decoration: InputDecoration(border: InputBorder.none),
+                            style: TextStyle(fontSize: detailFontSize),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: examplesController,
+                            maxLines: null,
+                            expands: true,
+                            decoration: InputDecoration(border: InputBorder.none),
+                            style: TextStyle(fontSize: detailFontSize),
+                          ),
+                        ),
+                      ],
                     )
                   : SingleChildScrollView(
-                      child: SelectableText(
-                        current?.other ?? '',
-                        style: TextStyle(fontSize: detailFontSize),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SelectableText(
+                            current?.other ?? '',
+                            style: TextStyle(fontSize: detailFontSize),
+                          ),
+                          SizedBox(height: 8),
+                          SelectableText(
+                            current?.examples ?? '',
+                            style: TextStyle(fontSize: detailFontSize),
+                          ),
+                        ],
                       ),
                     ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.only(left: 2),
-              padding: EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
-                border: Border.all(color: Color.fromARGB(255, 36, 99, 121)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: editing
-                  ? TextField(
-                      controller: examplesController,
-                      maxLines: null,
-                      expands: true,
-                      decoration: InputDecoration(border: InputBorder.none),
-                      style: TextStyle(fontSize: detailFontSize),
-                    )
-                  : SingleChildScrollView(
-                      child: SelectableText(
-                        current?.examples ?? '',
-                        style: TextStyle(fontSize: detailFontSize),
-                      ),
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(right: 2),
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
+                      border: Border.all(color: Color.fromARGB(255, 36, 99, 121)),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: editing
+                        ? TextField(
+                            controller: detailsController,
+                            maxLines: null,
+                            expands: true,
+                            decoration:
+                                InputDecoration(border: InputBorder.none),
+                            style: TextStyle(fontSize: detailFontSize),
+                          )
+                        : SingleChildScrollView(
+                            child: SelectableText(
+                              current?.other ?? '',
+                              style: TextStyle(fontSize: detailFontSize),
+                            ),
+                          ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(left: 2),
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Color.fromARGB(255, 20, 18, 24).withOpacity(0.1),
+                      border: Border.all(color: Color.fromARGB(255, 36, 99, 121)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: editing
+                        ? TextField(
+                            controller: examplesController,
+                            maxLines: null,
+                            expands: true,
+                            decoration:
+                                InputDecoration(border: InputBorder.none),
+                            style: TextStyle(fontSize: detailFontSize),
+                          )
+                        : SingleChildScrollView(
+                            child: SelectableText(
+                              current?.examples ?? '',
+                              style: TextStyle(fontSize: detailFontSize),
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
+
+    final recognizedLabel = !modelReady
+        ? 'Recognized drawing: $recognizerStatus'
+        : 'Recognized drawing: ${recognizedText.isEmpty ? recognizerStatus : recognizedText}'
+            '${recognizedScore != null ? ' (${(recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}';
 
     return Scaffold(
       appBar: AppBar(title: Text('Character Review')),
@@ -635,16 +750,53 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (showAllToggles)
-                      SizedBox(width: UiScale.toggleWidth, child: toggles),
+                    SizedBox(
+                      width: UiScale.toggleWidth,
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: IconButton(
+                          icon: Icon(Icons.settings),
+                          onPressed:
+                              widget.onSettingsPressed ?? _openSettingsMenu,
+                        ),
+                      ),
+                    ),
                     Expanded(child: Center(child: previewBox)),
-                    SizedBox(width: UiScale.controlsWidth, child: controls),
+                    SizedBox(width: UiScale.controlsWidth, child: listenButton),
                   ],
                 ),
                 SizedBox(height: 24),
                 exampleArea,
                 SizedBox(height: 16),
-                if (DeviceConfig.deviceType != DeviceType.smartphone)
+                if (widget.layoutMode)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: widget.onLoadLayout,
+                          child: Text('LOAD LAYOUT'),
+                        ),
+                        DropdownButton<double>(
+                          value: widget.fontScaleValue,
+                          items: const [
+                            DropdownMenuItem(
+                                value: 0.8, child: Text('Small')),
+                            DropdownMenuItem(
+                                value: 1.0, child: Text('Normal')),
+                            DropdownMenuItem(
+                                value: 1.2, child: Text('Large')),
+                            DropdownMenuItem(
+                                value: 1.5, child: Text('XL')),
+                          ],
+                          onChanged: widget.onFontScaleChanged,
+                        ),
+                      ],
+                    ),
+                  )
+                else if (DeviceConfig.deviceType != DeviceType.smartphone)
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Wrap(
@@ -699,120 +851,81 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                       ],
                     ),
                   ),
-                if (layout.showTouchPanel) SizedBox(height: drawingHeight + 56),
+                if (showTouchPanel) SizedBox(height: drawingHeight + 56),
               ],
             ),
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (layout.showTouchPanel)
-                    SizedBox(
-                      height: drawingHeight,
-                      width: contentWidth,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _infoColumn()),
-                          SizedBox(
-                            width: panelWidth,
-                            child: GestureDetector(
-                              onPanStart: (details) {
-                                setState(
-                                  () => points.add(details.localPosition),
-                                );
-                                strokePoints = [];
-                                strokePoints.add(
-                                  mlkit.StrokePoint(
-                                    x: details.localPosition.dx,
-                                    y: details.localPosition.dy,
-                                    t: DateTime.now().millisecondsSinceEpoch,
-                                  ),
-                                );
-                                ink.strokes.add(
-                                  mlkit.Stroke()
-                                    ..points = List.of(strokePoints),
-                                );
-                              },
-                              onPanUpdate: (details) {
-                                setState(
-                                  () => points.add(details.localPosition),
-                                );
-                                strokePoints.add(
-                                  mlkit.StrokePoint(
-                                    x: details.localPosition.dx,
-                                    y: details.localPosition.dy,
-                                    t: DateTime.now().millisecondsSinceEpoch,
-                                  ),
-                                );
-                                ink.strokes.last.points = List.of(strokePoints);
-                                queueRecognition();
-                              },
-                              onPanEnd: (_) {
-                                setState(() => points.add(null));
-                                strokePoints = [];
-                                queueRecognition();
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[800],
-                                  border: Border.all(color: Colors.white24),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: CustomPaint(
-                                  painter: _DrawingPainter(points: points),
-                                  child: SizedBox.expand(),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 8.0),
-                              child: Text(
-                                !modelReady
-                                    ? 'Recognized drawing: $recognizerStatus'
-                                    : 'Recognized drawing: ${recognizedText.isEmpty ? recognizerStatus : recognizedText}${recognizedScore != null ? ' (${(recognizedScore! * 100).toStringAsFixed(1)}%)' : ''}',
-                                style: TextStyle(fontSize: UiScale.smallFont),
-                              ),
-                            ),
-                          ),
-                        ],
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (showInfoText) ...[
+                      SizedBox(
+                        width: contentWidth,
+                        child: _infoColumn(recognizedLabel),
                       ),
-                    )
-                  else
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: _infoColumn(),
-                    ),
-                  SizedBox(height: layout.showTouchPanel ? 16 : 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (layout.showTouchPanel)
-                        ElevatedButton(
-                          onPressed: clearDrawing,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                          ),
-                          child: Text('DELETE'),
-                        ),
-                      if (layout.showTouchPanel) SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: goToPreviousCharacter,
-                        child: Text('PREVIOUS'),
-                      ),
-                      SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: goToNextCharacter,
-                        child: Text('NEXT'),
-                      ),
+                      const SizedBox(height: 8),
                     ],
-                  ),
+                    if (showTouchPanel)
+                      SizedBox(
+                        width: contentWidth,
+                        height: drawingHeight,
+                        child: _buildDrawingPad(),
+                      ),
+                    SizedBox(height: showTouchPanel ? 16 : 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: widget.layoutMode
+                          ? [
+                              if (showTouchPanel)
+                                ElevatedButton(
+                                  onPressed: clearDrawing,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                  ),
+                                  child: Text('DELETE'),
+                                ),
+                              if (showTouchPanel) SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: widget.onSaveLayout,
+                                child: Text('SAVE'),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: widget.onDeleteLayout,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: Text('DELETE'),
+                              ),
+                            ]
+                          : [
+                              if (showTouchPanel)
+                                ElevatedButton(
+                                  onPressed: clearDrawing,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                  ),
+                                  child: Text('DELETE'),
+                                ),
+                              if (showTouchPanel) SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: goToPreviousCharacter,
+                                child: Text('PREVIOUS'),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: goToNextCharacter,
+                                child: Text('NEXT'),
+                              ),
+                            ],
+                    ),
                 ],
               ),
             ),
@@ -833,6 +946,14 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width > 900) {
+      DeviceConfig.deviceType = DeviceType.browser;
+    } else if (width > 600) {
+      DeviceConfig.deviceType = DeviceType.tablet;
+    } else {
+      DeviceConfig.deviceType = DeviceType.smartphone;
+    }
     switch (DeviceConfig.deviceType) {
       case DeviceType.tablet:
         return _buildTabletLayout(context);
@@ -844,30 +965,32 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     }
   }
 
-  Widget _infoColumn() {
+  Widget _infoColumn(String recognizedLabel) {
+    final level = current?.level;
+    final tags = current?.tags;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         editing
-            ? SizedBox(
-                width: 180,
-                child: TextField(
-                  controller: levelController,
-                  decoration: InputDecoration(
-                    labelText: 'Level',
-                    isDense: true,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  ),
+            ? TextField(
+                controller: levelController,
+                decoration: InputDecoration(
+                  labelText: 'Level',
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 ),
               )
-            : SelectableText('Level: ${current?.level ?? ''}'),
+            : SelectableText(
+                'Level: ${level == null || level.isEmpty ? '—' : level}',
+                style: TextStyle(
+                    fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
+              ),
         SizedBox(height: 4),
         editing
             ? Row(
                 children: [
-                  SizedBox(
-                    width: 180,
+                  Expanded(
                     child: TextField(
                       controller: tagsController,
                       decoration: InputDecoration(
@@ -881,18 +1004,75 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
                   IconButton(onPressed: chooseTag, icon: Icon(Icons.list)),
                 ],
               )
-            : SelectableText('Tags: ${current?.tags.join(', ')}'),
+            : SelectableText(
+                'Tags: ${tags == null || tags.isEmpty ? '—' : tags.join(', ')}',
+                style: TextStyle(
+                    fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
+              ),
         SizedBox(height: 8),
         SelectableText(
           'Batch/Group: $batchLabel',
-          style: TextStyle(fontSize: UiScale.smallFont),
+          style: TextStyle(
+              fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
         ),
         SizedBox(height: 4),
         SelectableText(
           'Characters left in this $_reviewType: ${characters.length - currentIndex - 1}',
-          style: TextStyle(fontSize: UiScale.smallFont),
+          style: TextStyle(
+              fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
+        ),
+        SizedBox(height: 4),
+        SelectableText(
+          recognizedLabel,
+          style: TextStyle(
+              fontSize: UiScale.smallFont * DeviceConfig.layout.fontScale),
         ),
       ],
+    );
+  }
+
+  Widget _buildDrawingPad() {
+    return GestureDetector(
+      onPanStart: (details) {
+        setState(() => points.add(details.localPosition));
+        strokePoints = [];
+        strokePoints.add(
+          mlkit.StrokePoint(
+            x: details.localPosition.dx,
+            y: details.localPosition.dy,
+            t: DateTime.now().millisecondsSinceEpoch,
+          ),
+        );
+        ink.strokes.add(mlkit.Stroke()..points = List.of(strokePoints));
+      },
+      onPanUpdate: (details) {
+        setState(() => points.add(details.localPosition));
+        strokePoints.add(
+          mlkit.StrokePoint(
+            x: details.localPosition.dx,
+            y: details.localPosition.dy,
+            t: DateTime.now().millisecondsSinceEpoch,
+          ),
+        );
+        ink.strokes.last.points = List.of(strokePoints);
+        queueRecognition();
+      },
+      onPanEnd: (_) {
+        setState(() => points.add(null));
+        strokePoints = [];
+        queueRecognition();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[800],
+          border: Border.all(color: Colors.white24),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: CustomPaint(
+          painter: _DrawingPainter(points: points),
+          child: SizedBox.expand(),
+        ),
+      ),
     );
   }
 
@@ -908,7 +1088,10 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     return Row(
       children: [
         Text(label),
-        Switch(value: value, onChanged: onChanged),
+        Transform.scale(
+          scale: 0.7,
+          child: Switch(value: value, onChanged: onChanged),
+        ),
       ],
     );
   }

@@ -252,25 +252,28 @@ class _AddCharacterScreenState extends State<AddCharacterScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Add Character')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(width: UiScale.toggleWidth),
-                Expanded(child: Center(child: previewBox)),
-                SizedBox(width: UiScale.controlsWidth),
-              ],
-            ),
-            const SizedBox(height: 24),
-            exampleArea,
-            const SizedBox(height: 24),
-            formSection,
-            const SizedBox(height: 12),
-            buttons,
-          ],
+      body: SafeArea(
+        bottom: true,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: UiScale.toggleWidth),
+                  Expanded(child: Center(child: previewBox)),
+                  SizedBox(width: UiScale.controlsWidth),
+                ],
+              ),
+              const SizedBox(height: 24),
+              exampleArea,
+              const SizedBox(height: 24),
+              formSection,
+              const SizedBox(height: 12),
+              buttons,
+            ],
+          ),
         ),
       ),
     );

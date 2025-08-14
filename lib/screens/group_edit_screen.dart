@@ -178,13 +178,15 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Groups')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            DropdownButton<int>(
-              value: _selectedId,
-              hint: const Text('Select group'),
+      body: SafeArea(
+        bottom: true,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              DropdownButton<int>(
+                value: _selectedId,
+                hint: const Text('Select group'),
               items: [
                 for (final g in _groups)
                   DropdownMenuItem(value: g.id, child: Text(g.name)),
@@ -244,7 +246,8 @@ class _GroupEditScreenState extends State<GroupEditScreen> {
                 ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -229,11 +229,13 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Select Characters')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: SafeArea(
+        bottom: true,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Row(
               children: [
                 Expanded(child: batchDropdown),
@@ -269,7 +271,8 @@ class _BatchGroupSelectionScreenState extends State<BatchGroupSelectionScreen> {
                 ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
