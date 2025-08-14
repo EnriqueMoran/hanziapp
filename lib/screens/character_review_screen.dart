@@ -605,6 +605,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     );
 
     final exampleArea = SizedBox(
+      width: contentWidth,
       height: exampleHeight,
       child: DeviceConfig.deviceType == DeviceType.smartphone
           ? Container(
@@ -812,60 +813,18 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  SizedBox(
+                    width: contentWidth,
+                    child: _infoColumn(recognizedLabel),
+                  ),
+                  SizedBox(height: 8),
                   if (showTouchPanel)
-                    if (DeviceConfig.deviceType == DeviceType.smartphone)
-                      SizedBox(
-                        width: contentWidth,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              height: drawingHeight,
-                              child: _buildDrawingPad(),
-                            ),
-                            SizedBox(height: 8),
-                            _infoColumn(),
-                            SizedBox(height: 8),
-                            Text(
-                              recognizedLabel,
-                              style: TextStyle(fontSize: UiScale.smallFont),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        height: drawingHeight,
-                        width: contentWidth,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ConstrainedBox(
-                              constraints: BoxConstraints(
-                                  minWidth: 140, maxWidth: UiScale.controlsWidth),
-                              child: _infoColumn(),
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              flex: 3,
-                              child: SizedBox.expand(child: _buildDrawingPad()),
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                recognizedLabel,
-                                style: TextStyle(fontSize: UiScale.smallFont),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                  else
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: _infoColumn(),
+                    SizedBox(
+                      width: contentWidth,
+                      height: drawingHeight,
+                      child: _buildDrawingPad(),
                     ),
                   SizedBox(height: showTouchPanel ? 16 : 8),
                   Row(
@@ -930,7 +889,7 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
     }
   }
 
-  Widget _infoColumn() {
+  Widget _infoColumn(String recognizedLabel) {
     final level = current?.level;
     final tags = current?.tags;
     return Column(
@@ -975,6 +934,11 @@ class _CharacterReviewScreenState extends State<CharacterReviewScreen> {
         SizedBox(height: 4),
         SelectableText(
           'Characters left in this $_reviewType: ${characters.length - currentIndex - 1}',
+          style: TextStyle(fontSize: UiScale.smallFont),
+        ),
+        SizedBox(height: 4),
+        SelectableText(
+          recognizedLabel,
           style: TextStyle(fontSize: UiScale.smallFont),
         ),
       ],
