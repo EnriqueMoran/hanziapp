@@ -397,10 +397,8 @@ class OfflineService {
     progress?.call('Downloading remote data', 1, totalStages);
     final remoteChars = await CharacterApi.fetchAll(forceRemote: true);
     final remoteGroups = await GroupApi.fetchAll(forceRemote: true);
-    final remoteBatches = await BatchApi.fetchAll(forceRemote: true);
     final charMap = {for (final c in remoteChars) c.id: c};
     final groupMap = {for (final g in remoteGroups) g.id: g};
-    final batchMap = {for (final b in remoteBatches) b.id: b};
 
     // Step 2: apply local pending operations if newer
     final ops = await opsDb.query('pending_ops', orderBy: 'updated_at');
@@ -470,12 +468,8 @@ class OfflineService {
           final list = (payload['batches'] as List)
               .map((e) => Batch.fromJson(e as Map<String, dynamic>))
               .toList();
-          for (final b in list) {
-            final remote = batchMap[b.id];
-            final localTime = b.updatedAt ?? opTime ?? 0;
-            if (remote == null || localTime > (remote.updatedAt ?? 0)) {
-              await BatchApi.saveBatches([b]);
-            }
+          if (list.isNotEmpty) {
+            await BatchApi.saveBatches(list);
           }
           break;
       }
