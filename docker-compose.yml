@@ -7,7 +7,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - API_TOKEN=BCJpgVAev3zu2gqA6N5zVDJT9eNmnII2kJAHg7xdwfEHDc4G2r
+      - API_TOKEN=changeme
       - DB_PATH=/data/hanzi.db
 
   web:
